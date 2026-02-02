@@ -21,7 +21,7 @@ def init_models():
             project=settings.VERTEX_PROJECT,
             location=settings.VERTEX_LOCATION,
         )
-        _model = GenerativeModel("gemini-2.5-flash")
+        _model = GenerativeModel("gemini-3-pro-preview")
 
 
 def run_agent(

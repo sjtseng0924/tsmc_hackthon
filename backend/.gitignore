@@ -158,7 +158,7 @@ env.bak/
 venv.bak/
 
 # GCP service account keys
-service-account-key.json
+service-account-key*.json
 
 # Spyder project settings
 .spyderproject
