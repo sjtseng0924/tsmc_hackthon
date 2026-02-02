@@ -10,6 +10,17 @@ class Knowledge(Base):
     filename = Column(String, index=True) # filename
     content = Column(Text)
     vector = Column(Vector(768))
+    case_id = Column(String, index=True)
+    title = Column(String)
+    category = Column(String)
+    severity = Column(String)
+    summary = Column(Text)
+    root_cause = Column(Text)
+    timeline = Column(JSON)
+    immediate_fix = Column(Text)
+    long_term_fix = Column(Text)
+    tags = Column(JSON)
+    references = Column(JSON)
     created_at = Column(DateTime, server_default=func.now())
 
 # Log File Model
