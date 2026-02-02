@@ -15,6 +15,7 @@ uvicorn[standard]
 # Database
 alembic
 sqlalchemy
+psycopg2-binary
 
 # Utilities
 python-dotenv
