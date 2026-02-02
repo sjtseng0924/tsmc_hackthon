@@ -1,0 +1,20 @@
+# Discord Bot
+discord.py
+aiohttp
+
+# Google Cloud Platform
+google-cloud-storage
+google-cloud-firestore
+google-auth
+
+# Web Framework (if needed)
+fastapi
+uvicorn[standard]
+
+# Database
+alembic
+sqlalchemy
+
+# Utilities
+python-dotenv
+requests
