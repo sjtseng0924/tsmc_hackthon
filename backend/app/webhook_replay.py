@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import quote
 from typing import Iterable, Optional
 
 import aiohttp
@@ -64,11 +65,20 @@ def _inject_bot_mention(content: str) -> str:
     return content
 
 
+def _avatar_url_for_user(user: str) -> str:
+    seed = quote(user.strip() or "Unknown")
+    return f"https://api.dicebear.com/7.x/identicon/png?seed={seed}"
+
+
 async def _post_webhook(
     session: aiohttp.ClientSession, webhook_url: str, username: str, content: str
 ) -> None:
     content = _inject_bot_mention(content)
-    payload = {"username": username, "content": content}
+    payload = {
+        "username": username,
+        "content": content,
+        "avatar_url": _avatar_url_for_user(username),
+    }
     if settings.DISCORD_BOT_ID:
         payload["allowed_mentions"] = {"users": [str(settings.DISCORD_BOT_ID)]}
     async with session.post(webhook_url, json=payload) as response:
