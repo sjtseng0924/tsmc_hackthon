@@ -26,4 +26,9 @@ psycopg2-binary
 python-dotenv
 requests
 pgvector
+
+# Google Calendar
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
 tqdm
