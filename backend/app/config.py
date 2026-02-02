@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     BACKEND_ROOT: str = str(Path(__file__).resolve().parents[1])
     DISCORD_TOKEN: Optional[str] = None
     DISCORD_WEBHOOK_URL: Optional[str] = None
+    DISCORD_BOT_ID: Optional[int] = None
+    DISCORD_BOT_NAME: Optional[str] = None
     PORT: int = 8000
     
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None

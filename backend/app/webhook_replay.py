@@ -51,10 +51,26 @@ def format_username(message: ReplayMessage, with_role: bool) -> str:
     return message.user
 
 
+def _inject_bot_mention(content: str) -> str:
+    bot_id = settings.DISCORD_BOT_ID
+    if not bot_id:
+        return content
+    mention = f"<@{bot_id}>"
+    if mention in content or f"<@!{bot_id}>" in content:
+        return content
+    bot_name = settings.DISCORD_BOT_NAME
+    if bot_name:
+        return content.replace(f"@{bot_name}", mention)
+    return content
+
+
 async def _post_webhook(
     session: aiohttp.ClientSession, webhook_url: str, username: str, content: str
 ) -> None:
+    content = _inject_bot_mention(content)
     payload = {"username": username, "content": content}
+    if settings.DISCORD_BOT_ID:
+        payload["allowed_mentions"] = {"users": [str(settings.DISCORD_BOT_ID)]}
     async with session.post(webhook_url, json=payload) as response:
         if response.status >= 400:
             body = await response.text()
