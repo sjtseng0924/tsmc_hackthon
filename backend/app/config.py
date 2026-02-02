@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     VERTEX_PROJECT: Optional[str] = None
     VERTEX_LOCATION: Optional[str] = "us-central1"
+    VERTEX_EMBEDDING_LOCATION: Optional[str] = "us-central1"
+    EMBEDDING_MODEL: str = "gemini-embedding-001"
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

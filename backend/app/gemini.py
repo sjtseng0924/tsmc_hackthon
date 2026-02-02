@@ -20,10 +20,10 @@ def init_models():
         
         vertexai.init(
             project=settings.VERTEX_PROJECT,
-            location=settings.VERTEX_LOCATION,
+            location=settings.VERTEX_AGENT_LOCATION,
         )
         _agent = agent_engines.LanggraphAgent(
-            model="gemini-2.5-pro",
+            model=settings.AGENT_MODEL,
             tools=[list_knowledge_files, retrieve_knowledge],
             model_kwargs={
                 "temperature": 0.2,
