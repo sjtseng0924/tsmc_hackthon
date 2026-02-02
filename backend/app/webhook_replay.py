@@ -17,44 +17,19 @@ class ReplayMessage:
     content: str
 
 
-def _candidate_scenario_paths() -> list[Path]:
+def _scenario_paths() -> list[Path]:
     file_path = Path(__file__).resolve()
-    repo_root = file_path.parents[2]
-    backend_root = file_path.parents[1]
-    cwd = Path.cwd()
-    return [
-        repo_root / "Workshop" / "CommunicationScenario" / "IssueDiscussion.json",
-        backend_root / "Workshop" / "CommunicationScenario" / "IssueDiscussion.json",
-        cwd / "Workshop" / "CommunicationScenario" / "IssueDiscussion.json",
-    ]
+    repo_root = file_path.parents[1]
+    return repo_root / "Workshop" / "CommunicationScenario" / "IssueDiscussion.json"
+
 
 
 def _parse_timestamp(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
 
 
-def _resolve_default_path() -> Path:
-    for candidate in _candidate_scenario_paths():
-        if candidate.exists():
-            return candidate
-    raise FileNotFoundError("Default scenario file not found in known locations")
-
-
-def _resolve_path(file_path: Optional[str]) -> Path:
-    if not file_path:
-        return _resolve_default_path()
-    candidate = Path(file_path)
-    if candidate.is_absolute():
-        return candidate
-    cwd_path = Path.cwd() / candidate
-    if cwd_path.exists():
-        return cwd_path
-    backend_path = Path(__file__).resolve().parents[1] / candidate
-    return backend_path
-
-
 def load_replay_messages(file_path: Optional[str] = None) -> list[ReplayMessage]:
-    path = _resolve_path(file_path)
+    path = _scenario_paths() if file_path is None else Path(file_path)
     with path.open("r", encoding="utf-8") as handle:
         raw = json.load(handle)
 

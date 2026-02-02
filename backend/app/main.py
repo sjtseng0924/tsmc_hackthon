@@ -1,14 +1,19 @@
-import asyncio
-import contextlib
 import logging
 import os
 from typing import Literal, Optional
 
-import discord
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from app.discord_service import (
+    DiscordChannelNotFound,
+    DiscordInvalidChannel,
+    DiscordMissingPermissions,
+    DiscordNotInitialized,
+    DiscordNotReady,
+    DiscordService,
+)
 from app.webhook_replay import get_webhook_url, load_replay_messages, replay_via_webhook
 # Gemini 相關導入
 try:
@@ -23,12 +28,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("discord-backend")
 
 app = FastAPI(title="Discord Backend")
-
-
-def _build_discord_client() -> discord.Client:
-    intents = discord.Intents.default()
-    intents.message_content = True
-    return discord.Client(intents=intents)
 
 
 class DiscordSendRequest(BaseModel):
@@ -74,90 +73,49 @@ class GeminiAgentResponse(BaseModel):
     error: Optional[str] = None
 
 
-def _get_token() -> Optional[str]:
-    return os.getenv("DISCORD_TOKEN")
-
-
-async def _run_discord_client(client: discord.Client, token: str) -> None:
-    try:
-        await client.start(token)
-    except asyncio.CancelledError:
-        raise
-    except Exception:
-        logger.exception("Discord client stopped unexpectedly")
-
-
 @app.on_event("startup")
 async def startup_event() -> None:
-    token = _get_token()
-    if not token:
-        logger.warning("DISCORD_TOKEN not set; Discord client will not start")
-        app.state.discord_client = None
-        app.state.discord_task = None
-        return
-
-    client = _build_discord_client()
-
-    @client.event
-    async def on_ready() -> None:
-        logger.info("Discord client logged in as %s", client.user)
-
-    @client.event
-    async def on_message(message: discord.Message) -> None:
-        if message.author == client.user:
-            return
-        if message.content:
-            author_name = message.author.display_name
-            author_id = message.author.id
-            await message.channel.send(f"{author_name} ({author_id}) 說：{message.content}")
-
-    app.state.discord_client = client
-    app.state.discord_task = asyncio.create_task(_run_discord_client(client, token))
+    service = DiscordService(logger)
+    await service.startup()
+    app.state.discord_service = service
 
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
-    client: Optional[discord.Client] = getattr(app.state, "discord_client", None)
-    task: Optional[asyncio.Task] = getattr(app.state, "discord_task", None)
-
-    if client is not None:
-        await client.close()
-
-    if task is not None:
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+    service: DiscordService = getattr(app.state, "discord_service", None)
+    if service is not None:
+        await service.shutdown()
 
 
 @app.get("/health")
 async def health_check() -> dict:
-    client: Optional[discord.Client] = getattr(app.state, "discord_client", None)
+    service: DiscordService = getattr(app.state, "discord_service", None)
     return {
         "status": "ok",
-        "discord_ready": bool(client and client.is_ready()),
+        "discord_ready": bool(service and service.is_ready()),
     }
 
 
 @app.post("/discord/send", response_model=DiscordSendResponse)
 async def send_discord_message(payload: DiscordSendRequest) -> DiscordSendResponse:
-    client: Optional[discord.Client] = getattr(app.state, "discord_client", None)
-    if client is None:
-        raise HTTPException(status_code=503, detail="Discord client not initialized")
-
-    if not client.is_ready():
-        raise HTTPException(status_code=503, detail="Discord client not ready")
+    service: DiscordService = getattr(app.state, "discord_service", None)
+    if service is None:
+        raise HTTPException(status_code=503, detail="Discord service not initialized")
 
     try:
-        channel = await client.fetch_channel(payload.channel_id)
-    except discord.NotFound as exc:
-        raise HTTPException(status_code=404, detail="Channel not found") from exc
-    except discord.Forbidden as exc:
-        raise HTTPException(status_code=403, detail="Missing permissions for channel") from exc
-    if not isinstance(channel, (discord.TextChannel, discord.Thread)):
-        raise HTTPException(status_code=400, detail="Channel is not text-capable")
+        message = await service.send_message(payload.channel_id, payload.content)
+    except DiscordNotInitialized as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except DiscordNotReady as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except DiscordChannelNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except DiscordMissingPermissions as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except DiscordInvalidChannel as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    message = await channel.send(payload.content)
-    return DiscordSendResponse(message_id=message.id, channel_id=channel.id)
+    return DiscordSendResponse(message_id=message.id, channel_id=message.channel.id)
 
 
 @app.post("/discord/webhook/replay", response_model=WebhookReplayResponse)
