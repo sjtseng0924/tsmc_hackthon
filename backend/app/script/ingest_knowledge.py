@@ -10,9 +10,9 @@ sys.path.append(str(project_root))
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.database import SessionLocal
-from app.case_parser import parse_case_text
+from app.services.case_parser import parse_case_text
 from app.models import Knowledge
-from app.rag import get_embedding
+from app.services.rag import get_embedding
 
 
 def load_documents(base_dir: Path, glob_pattern: str) -> list:

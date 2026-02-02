@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.discord_service import (
+from app.services.discord_service import (
     DiscordChannelNotFound,
     DiscordInvalidChannel,
     DiscordMissingPermissions,
@@ -14,11 +14,11 @@ from app.discord_service import (
     DiscordNotReady,
     DiscordService,
 )
-from app.routers import cases_router
-from app.webhook_replay import get_webhook_url, load_replay_messages, replay_via_webhook
+from app.api import cases_router
+from app.services.webhook_replay import get_webhook_url, load_replay_messages, replay_via_webhook
 # Gemini 相關導入
 try:
-    from app.gemini import run_agent
+    from app.services.gemini import run_agent
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False

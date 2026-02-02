@@ -4,7 +4,7 @@ import json
 import vertexai
 from vertexai import agent_engines
 from app.config import settings
-from app.rag import list_knowledge_files, retrieve_knowledge
+from app.services.rag import list_knowledge_files, retrieve_knowledge
 from app.tools.calendar import list_events, create_event, check_availability
 
 

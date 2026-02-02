@@ -7,7 +7,7 @@ import discord
 
 # Gemini 相關導入
 try:
-    from app.gemini import run_agent
+    from app.services.gemini import run_agent
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False

@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.cases_service import (
+from app.services.cases_service import (
     filter_case_items,
     get_case_item,
     list_case_ids,
