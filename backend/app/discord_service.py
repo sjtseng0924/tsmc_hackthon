@@ -5,6 +5,13 @@ from typing import Optional
 
 import discord
 
+# Gemini 相關導入
+try:
+    from app.gemini import run_agent
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
 from app.config import settings
 
 class DiscordServiceError(Exception):
@@ -37,6 +44,15 @@ def _get_token() -> Optional[str]:
 
 def _build_discord_client(intents: discord.Intents) -> discord.Client:
     return discord.Client(intents=intents)
+
+
+def _strip_bot_mention(message: discord.Message, bot_user: discord.ClientUser) -> str:
+    content = message.content or ""
+    if bot_user:
+        mention = f"<@{bot_user.id}>"
+        mention_nick = f"<@!{bot_user.id}>"
+        content = content.replace(mention, "").replace(mention_nick, "")
+    return content.strip()
 
 
 async def _run_discord_client(
@@ -85,12 +101,33 @@ class DiscordService:
                 return
             if client.user not in message.mentions:
                 return
-            if message.content:
-                author_name = message.author.display_name
-                author_id = message.author.id
-                await message.channel.send(
-                    f"{author_name} ({author_id}) 說：{message.content}"
+            if not message.content:
+                return
+
+            prompt = _strip_bot_mention(message, client.user)
+            if not prompt:
+                await message.channel.send("請輸入要詢問的內容。")
+                return
+
+            if not GEMINI_AVAILABLE:
+                await message.channel.send("Gemini Agent 目前無法使用。")
+                return
+
+            try:
+                # TODO: 接上 RAG/工具時，填入 rag_context
+                result = await asyncio.to_thread(
+                    run_agent,
+                    user_message=prompt,
+                    rag_context="",
                 )
+
+                reply = result.get("message") if isinstance(result, dict) else str(result)
+                if not reply:
+                    reply = str(result)
+                await message.channel.send(reply)
+            except Exception:
+                self._logger.exception("Gemini reply failed")
+                await message.channel.send("發生錯誤，請稍後再試。")
 
         self._client = client
         self._task = asyncio.create_task(

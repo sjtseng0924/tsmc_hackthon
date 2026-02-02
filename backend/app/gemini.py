@@ -4,7 +4,7 @@ import json
 import vertexai
 from vertexai import agent_engines
 from app.config import settings
-from app.rag import retrieve_code_from_sql, search_knowledge_base
+#from app.rag import retrieve_code_from_sql, search_knowledge_base
 
 
 _agent = None
@@ -39,14 +39,7 @@ def run_agent(
 ) -> dict:
     init_models()
 
-    prompt = f"""
-你是一個手機 App 使用助手。
-使用者輸入：{user_message}
-歷史參考：
-{rag_context}
-
-請只輸出 JSON。
-"""
+    prompt = f"""以下是使用者討論事件的聊天紀錄 {user_message}，以下是之前相似事件的結案報告{rag_context}"""
 
     response = _agent.query(input={"messages": [("user", prompt)]})
 
@@ -56,4 +49,11 @@ def run_agent(
         except Exception:
             return {"message": response, "confidence": 0.0}
 
-    return response
+    if isinstance(response, dict) and "messages" in response:
+        for msg in reversed(response["messages"]):
+            msg_type = msg.get("kwargs", {}).get("type")
+            if msg_type == "ai":
+                content = msg.get("kwargs", {}).get("content", "")
+                return {"message": content, "raw": response}
+
+    return {"message": str(response), "raw": response}
