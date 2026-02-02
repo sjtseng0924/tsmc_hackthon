@@ -2,13 +2,14 @@ import asyncio
 import contextlib
 import logging
 import os
-from typing import Optional
+from typing import Literal, Optional
 
 import discord
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from app.webhook_replay import get_webhook_url, load_replay_messages, replay_via_webhook
 # Gemini 相關導入
 try:
     from app.gemini import run_agent
@@ -38,6 +39,28 @@ class DiscordSendRequest(BaseModel):
 class DiscordSendResponse(BaseModel):
     message_id: int
     channel_id: int
+
+
+class WebhookReplayRequest(BaseModel):
+    webhook_url: Optional[str] = Field(
+        default=None, description="Discord webhook URL (fallback to DISCORD_WEBHOOK_URL)"
+    )
+    file_path: Optional[str] = Field(
+        default=None, description="Path to scenario JSON file"
+    )
+    mode: Literal["instant", "paced"] = Field(
+        default="instant", description="Send all messages instantly or paced"
+    )
+    max_delay_seconds: float = Field(
+        default=2.0, ge=0.0, le=30.0, description="Cap delay when paced"
+    )
+    username_with_role: bool = Field(
+        default=True, description="Append role in webhook username"
+    )
+
+
+class WebhookReplayResponse(BaseModel):
+    sent: int
 
 
 class GeminiAgentRequest(BaseModel):
@@ -135,6 +158,34 @@ async def send_discord_message(payload: DiscordSendRequest) -> DiscordSendRespon
 
     message = await channel.send(payload.content)
     return DiscordSendResponse(message_id=message.id, channel_id=channel.id)
+
+
+@app.post("/discord/webhook/replay", response_model=WebhookReplayResponse)
+async def replay_webhook(payload: WebhookReplayRequest) -> WebhookReplayResponse:
+    webhook_url = get_webhook_url(payload.webhook_url)
+    if not webhook_url:
+        raise HTTPException(status_code=400, detail="Webhook URL not provided")
+
+    try:
+        messages = load_replay_messages(payload.file_path)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Scenario file not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid scenario data") from exc
+
+    paced = payload.mode == "paced"
+    try:
+        sent = await replay_via_webhook(
+            webhook_url=webhook_url,
+            messages=messages,
+            paced=paced,
+            max_delay_seconds=payload.max_delay_seconds,
+            include_role=payload.username_with_role,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return WebhookReplayResponse(sent=sent)
 
 
 @app.post("/agent", response_model=GeminiAgentResponse)
