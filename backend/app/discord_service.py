@@ -123,7 +123,8 @@ class DiscordService:
 
                 reply = result.get("message") if isinstance(result, dict) else str(result)
                 if not reply:
-                    reply = str(result)
+                    await message.channel.send("模型回覆為空，請再試一次或換個說法。")
+                    return
                 await message.channel.send(reply)
             except Exception:
                 self._logger.exception("Gemini reply failed")
