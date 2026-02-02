@@ -1,11 +1,11 @@
 import asyncio
 import contextlib
 import logging
-import os
 from typing import Optional
 
 import discord
 
+from app.config import settings
 
 class DiscordServiceError(Exception):
     pass
@@ -32,7 +32,7 @@ class DiscordInvalidChannel(DiscordServiceError):
 
 
 def _get_token() -> Optional[str]:
-    return os.getenv("DISCORD_TOKEN")
+    return settings.DISCORD_TOKEN
 
 
 def _build_discord_client(intents: discord.Intents) -> discord.Client:

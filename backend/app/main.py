@@ -1,11 +1,10 @@
 import logging
-import os
 from typing import Literal, Optional
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.discord_service import (
     DiscordChannelNotFound,
     DiscordInvalidChannel,
@@ -21,8 +20,6 @@ try:
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
-
-load_dotenv(override=True)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("discord-backend")
@@ -170,5 +167,4 @@ async def agent_handler(payload: GeminiAgentRequest) -> GeminiAgentResponse:
 if __name__ == "__main__":
     import uvicorn
 
-    port = int(os.getenv("PORT", "8000"))
-    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=settings.PORT, reload=False)

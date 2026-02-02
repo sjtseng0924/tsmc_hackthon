@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -65,7 +64,7 @@ async def _post_webhook(
 def get_webhook_url(override: Optional[str]) -> Optional[str]:
     if override:
         return override
-    return os.getenv("DISCORD_WEBHOOK_URL")
+    return settings.DISCORD_WEBHOOK_URL
 
 
 async def replay_via_webhook(
