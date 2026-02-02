@@ -9,6 +9,8 @@ google-auth
 google-cloud-aiplatform[agent-engines,langchain]
 cloudpickle
 pydantic
+langchain-community
+langchain-text-splitters
 
 # Web Framework (if needed)
 fastapi
