@@ -9,10 +9,10 @@ def get_embedding(text: str):
     """將文字轉成向量 (768維)"""
     vertexai.init(
         project=settings.VERTEX_PROJECT,
-        location=settings.VERTEX_LOCATION
+        location=settings.VERTEX_EMBEDDING_LOCATION
     )
     
-    model = TextEmbeddingModel.from_pretrained("gemini-embedding-001")
+    model = TextEmbeddingModel.from_pretrained(settings.EMBEDDING_MODEL)
     # Force embedding size to match the pgvector column (vector(768))
     embeddings = model.get_embeddings([text], output_dimensionality=768)
     return embeddings[0].values

@@ -5,6 +5,7 @@ import vertexai
 from vertexai import agent_engines
 from app.config import settings
 from app.rag import list_knowledge_files, retrieve_knowledge
+from app.tools.calendar import list_events, create_event, check_availability
 
 
 _agent = None
@@ -20,11 +21,17 @@ def init_models():
         
         vertexai.init(
             project=settings.VERTEX_PROJECT,
-            location=settings.VERTEX_LOCATION,
+            location=settings.VERTEX_AGENT_LOCATION,
         )
         _agent = agent_engines.LanggraphAgent(
-            model="gemini-2.5-pro",
-            tools=[list_knowledge_files, retrieve_knowledge],
+            model=settings.AGENT_MODEL,
+            tools=[
+                list_knowledge_files, 
+                retrieve_knowledge,
+                list_events,
+                create_event,
+                check_availability
+            ],
             model_kwargs={
                 "temperature": 0.2,
                 "max_output_tokens": 800,
@@ -40,7 +47,11 @@ def run_agent(
     init_models()
 
     prompt = f"""
-你是一個手機 App 使用助手。
+你是一個 IT 事故處理助手 (IT Incident Assistant)。
+你的任務是協助團隊解決系統故障，協調人員，並記錄事故。
+你可以查看知識庫、查詢日曆、確認人員是否有空（例如 Ivan），並發起會議邀請。
+目前的場景通常涉及緊急事故，例如資料遺失或服務中斷。請展現專業、冷靜且主動的態度。
+
 使用者輸入：{user_message}
 歷史參考：
 {rag_context}

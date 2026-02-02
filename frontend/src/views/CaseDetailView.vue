@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getCaseById } from '../api/cases'
 import CaseSummary from '../components/CaseSummary.vue'
@@ -9,13 +9,44 @@ import CaseSolution from '../components/CaseSolution.vue'
 import CaseReferences from '../components/CaseReferences.vue'
 
 const route = useRoute()
-const caseItem = computed(() => getCaseById(route.params.id))
+const caseItem = ref(null)
+const loading = ref(true)
+const error = ref('')
+
+const loadCase = async (id) => {
+  loading.value = true
+  error.value = ''
+  caseItem.value = null
+  try {
+    caseItem.value = await getCaseById(id)
+  } catch (err) {
+    error.value = err?.message || 'Failed to load case.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => loadCase(route.params.id))
+watch(
+  () => route.params.id,
+  (newId) => loadCase(newId),
+)
 </script>
 
 <template>
   <RouterLink to="/cases" class="back-link">← Back to list</RouterLink>
 
-  <section v-if="caseItem" class="section">
+  <section v-if="loading" class="section">
+    <div class="section-title">Loading...</div>
+    <p>Fetching case details.</p>
+  </section>
+
+  <section v-else-if="error" class="section">
+    <div class="section-title">Failed to load</div>
+    <p>{{ error }}</p>
+  </section>
+
+  <section v-else-if="caseItem" class="section">
     <div class="section-title">{{ caseItem.title }}</div>
     <div class="subtitle">{{ caseItem.id }}</div>
     <div class="severity" :class="caseItem.severity">{{ caseItem.severity.toUpperCase() }}</div>

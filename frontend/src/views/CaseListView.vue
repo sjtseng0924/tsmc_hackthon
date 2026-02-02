@@ -1,16 +1,32 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { getCases, getCategories } from '../api/cases'
+import { computed, onMounted, ref } from 'vue'
+import { getCases, getTaxonomy } from '../api/cases'
 import CaseCard from '../components/CaseCard.vue'
 
 const searchTerm = ref('')
 const selectedCategory = ref('all')
+const cases = ref([])
+const categories = ref([])
+const loading = ref(true)
+const error = ref('')
 
-const categories = computed(() => getCategories())
+const loadCases = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const [caseItems, taxonomy] = await Promise.all([getCases(), getTaxonomy()])
+    cases.value = caseItems
+    categories.value = taxonomy.categories || []
+  } catch (err) {
+    error.value = err?.message || 'Failed to load cases.'
+  } finally {
+    loading.value = false
+  }
+}
 
-const cases = computed(() => {
+const filteredCases = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
-  return getCases().filter((item) => {
+  return cases.value.filter((item) => {
     const matchesCategory =
       selectedCategory.value === 'all' || item.category === selectedCategory.value
     if (!matchesCategory) return false
@@ -30,6 +46,8 @@ const cases = computed(() => {
     return haystack.includes(term)
   })
 })
+
+onMounted(loadCases)
 </script>
 
 <template>
@@ -52,7 +70,15 @@ const cases = computed(() => {
     </div>
   </section>
 
-  <div class="case-grid">
-    <CaseCard v-for="item in cases" :key="item.id" :case-item="item" />
+  <section v-if="loading" class="section">
+    <div class="section-title">Loading...</div>
+    <p>Fetching cases from backend.</p>
+  </section>
+  <section v-else-if="error" class="section">
+    <div class="section-title">Failed to load</div>
+    <p>{{ error }}</p>
+  </section>
+  <div v-else class="case-grid">
+    <CaseCard v-for="item in filteredCases" :key="item.id" :case-item="item" />
   </div>
 </template>

@@ -10,6 +10,7 @@ sys.path.append(str(project_root))
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.database import SessionLocal
+from app.case_parser import parse_case_text
 from app.models import Knowledge
 from app.rag import get_embedding
 
@@ -40,7 +41,7 @@ def split_documents(documents: list) -> list:
     return splitter.split_documents(documents)
 
 
-def save_chunks(chunks: list) -> None:
+def save_chunks(chunks: list, parsed_by_filename: dict) -> None:
     if not chunks:
         print("No chunks to save")
         return
@@ -51,15 +52,31 @@ def save_chunks(chunks: list) -> None:
         if deleted:
             print(f"Cleared {deleted} existing rows from knowledge")
         added = []
+        annotated = set()
         for chunk in chunks:
             source = chunk.metadata.get("source", "unknown")
             filename = os.path.basename(source)
             vector = get_embedding(chunk.page_content)
+            parsed = parsed_by_filename.get(filename)
+            is_first = filename not in annotated and parsed is not None
+            if is_first:
+                annotated.add(filename)
             added.append(
                 Knowledge(
                     filename=filename,
                     content=chunk.page_content,
                     vector=vector,
+                    case_id=parsed["case_id"] if is_first else None,
+                    title=parsed["title"] if is_first else None,
+                    category=parsed["category"] if is_first else None,
+                    severity=parsed["severity"] if is_first else None,
+                    summary=parsed["summary"] if is_first else None,
+                    root_cause=parsed["root_cause"] if is_first else None,
+                    timeline=parsed["timeline"] if is_first else None,
+                    immediate_fix=parsed["immediate_fix"] if is_first else None,
+                    long_term_fix=parsed["long_term_fix"] if is_first else None,
+                    tags=parsed["tags"] if is_first else None,
+                    references=parsed["references"] if is_first else None,
                 )
             )
         db.add_all(added)
@@ -72,6 +89,16 @@ def save_chunks(chunks: list) -> None:
         db.close()
 
 
+def parse_cases(documents: list) -> dict:
+    parsed_by_filename = {}
+    for doc in documents:
+        filename = os.path.basename(doc.metadata.get("source", ""))
+        if not filename:
+            continue
+        parsed_by_filename[filename] = parse_case_text(doc.page_content)
+    return parsed_by_filename
+
+
 def ingest_dirs(dirs: list, glob_pattern: str) -> None:
     all_docs = []
     for d in dirs:
@@ -80,9 +107,10 @@ def ingest_dirs(dirs: list, glob_pattern: str) -> None:
     if not all_docs:
         print("No documents loaded. Check directories or glob pattern.")
         return
+    parsed_by_filename = parse_cases(all_docs)
     chunks = split_documents(all_docs)
     print(f"Total chunks: {len(chunks)}")
-    save_chunks(chunks)
+    save_chunks(chunks, parsed_by_filename)
 
 
 def default_dirs() -> list:

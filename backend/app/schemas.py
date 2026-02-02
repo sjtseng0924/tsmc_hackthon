@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 # 基礎欄位 (Shared properties)
 class KnowledgeChunkBase(BaseModel):
@@ -19,3 +19,33 @@ class KnowledgeChunk(KnowledgeChunkBase):
 
     class Config:
         from_attributes = True
+
+
+class CaseReference(BaseModel):
+    label: str
+    url: str
+
+
+class CaseItem(BaseModel):
+    id: str
+    title: str
+    category: str
+    severity: str
+    rootCause: str
+    tags: List[str]
+    summary: str
+    timeline: List[str]
+    immediateFix: str
+    longTermFix: str
+    references: List[CaseReference]
+
+
+class CaseListResponse(BaseModel):
+    total: int
+    items: List[CaseItem]
+
+
+class TaxonomyResponse(BaseModel):
+    categories: List[str]
+    severities: List[str]
+    tags: List[str]

@@ -2,6 +2,7 @@ import logging
 from typing import Literal, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from app.config import settings
@@ -13,6 +14,7 @@ from app.discord_service import (
     DiscordNotReady,
     DiscordService,
 )
+from app.routers import cases_router
 from app.webhook_replay import get_webhook_url, load_replay_messages, replay_via_webhook
 # Gemini 相關導入
 try:
@@ -25,6 +27,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("discord-backend")
 
 app = FastAPI(title="Discord Backend")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(cases_router)
 
 
 class DiscordSendRequest(BaseModel):
