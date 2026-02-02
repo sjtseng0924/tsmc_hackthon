@@ -23,6 +23,9 @@ class Knowledge(Base):
     references = Column(JSON)
     created_at = Column(DateTime, server_default=func.now())
 
+    # 一個 knowledge 對應多則訊息討論
+    messages = relationship("Message", back_populates="knowledge", cascade="all, delete-orphan")
+
 # Log File Model
 class LogFile(Base):
     __tablename__ = "log_files"
@@ -39,18 +42,16 @@ class LogEntry(Base):
     timestep = Column(DateTime, nullable=True)
     raw_content = Column(Text, nullable=False)
 
-# Message Channel Model
-class MessageChannel(Base):
-    __tablename__ = "message_channels"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True) # channel name
-    messages = relationship("Message", back_populates="channel", cascade="all, delete-orphan")
-
 class Message(Base):
     __tablename__ = "messages"
     id = Column(Integer, primary_key=True, index=True)
-    channel_id = Column(Integer, ForeignKey('message_channels.id'), nullable=False)
-    channel = relationship("MessageChannel", back_populates="messages")
+    # foreign key to knowledge table
+    knowledge_id = Column(Integer, ForeignKey('knowledge.id'), nullable=True, index=True)
+    knowledge = relationship("Knowledge", back_populates="messages")
+    
+    timestamp = Column(DateTime, nullable=True)
+    user = Column(String, nullable=True)
+    role = Column(String, nullable=True)
     content = Column(Text, nullable=False)
 
 # Code Model

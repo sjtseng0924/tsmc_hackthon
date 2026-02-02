@@ -49,3 +49,23 @@ class TaxonomyResponse(BaseModel):
     categories: List[str]
     severities: List[str]
     tags: List[str]
+
+
+# Messages linked to knowledge
+class MessageBase(BaseModel):
+    knowledge_id: Optional[int] = None
+    timestamp: datetime  # 訊息時間（同 created_at 概念）
+    user: Optional[str] = None
+    role: Optional[str] = None
+    content: str
+
+
+class MessageCreate(MessageBase):
+    pass
+
+
+class Message(MessageBase):
+    id: int
+
+    class Config:
+        from_attributes = True
