@@ -1,0 +1,29 @@
+Question: Historical connections and suspect identification.
+Answer:	1. 自主識別嫌疑腳本: AI 必須在無明確指令的情況下，通過分析 tNote_app_server_v1.log 中的時間戳和 CRON 記錄，自主識別出 /opt/tNote/scripts/cache_cleanup_v2.sh 是頭號嫌疑犯。
+				2. 主動發現歷史關聯: AI 必須主動通過模擬的工具（如 search_knowledge_base 或 list_files），在知識庫或文件系統中發現並關聯到歷史事故報告 INC-20230815-04.txt。
+
+Question: Detailed analysis of the problem and identification of the root cause
+Answer: 1. 解釋「權限問題」根源: AI 必須通過讀取 cache_cleanup_v2.sh，準確歸因「權限問題」於腳本中的 unset 指令，並能將其與 INC-20230815-04.txt 的內容聯繫起來。
+				2. 解釋「資料庫問題」根源: AI 必須通過讀取 cache_cleanup_v2.sh，準確歸因「資料庫問題」於腳本中的 trap 'iptables --flush' EXIT 機制。
+				3. 構建完整證據鏈: AI 必須主動利用從 tNote_app_server_v1.log 中提取的關鍵 IP (10.0.2.20)，去搜索 firewall.log，並將 iptables --flush 的審計記錄與後續的 UFW BLOCK 記錄關聯起來，形成完整的證據鏈。
+				4. 指出歷史報告的疏漏: AI 必須對比腳本中的 iptables --flush 和歷史報告中「未發現其他問題」的結論，明確指出舊報告對防火牆操作的錯誤判斷是導致事故升級的關鍵。
+
+Question: Propose a solution
+Answer: 1. 提出完整的「緊急措施」: AI 的方案必須針對兩個已查明的根本原因分別提出緊急措施，即：
+							恢復網路：恢復防火牆規則。
+							恢復權限：重啟應用服務以重新加載憑證。
+				2. 提出完整的「永久性修復」: AI 的方案必須針對腳本中的兩個缺陷分別提出永久性修復建議，即：
+							移除 unset 指令。
+							移除或替換 iptables --flush 相關的 trap 機制。
+				3. (加分項) 超越性建議: AI 能否提出超越腳本修改本身的流程性建議，例如「在 CI/CD 中加入高風險命令檢測」、「對所有維運腳本進行審查」等。
+
+
+
+Question: Write a case closure report
+Answer: 1. 標題：包含文件編號、報告日期、事件標題
+				2. 基本資訊：包含issue發生時間及解決時間。
+				3. 報案問題：issue報案問題。
+				4. 影響範圍：此issue影響的範圍。
+				5. Issue 發生細節描述
+				6. 解決方案
+				7. 之後如何避免

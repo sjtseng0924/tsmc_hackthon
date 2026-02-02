@@ -1,0 +1,104 @@
+[2023-10-26T23:45:00Z] [INFO] [tNote-AppServer-1] [HealthCheck] System status: OK. DB replication lag: 5ms.
+[2023-10-26T23:45:10Z] [INFO] [tNote-AppServer-2] [AuthService] User 'john.doe' logged in successfully from 192.168.1.10.
+[2023-10-26T23:45:45Z] [INFO] [tNote-AppServer-4] [DocumentService] User 'alice.ops' accessed document 'doc-id-xy123z'.
+[2023-10-26T23:46:20Z] [INFO] [tNote-AppServer-3] [UploadHandler] User 'bob.dev' successfully uploaded 'feature-spec.md'.
+[2023-10-26T23:47:01Z] [INFO] [tNote-AppServer-5] [DocumentService] User 'jane.smith' accessed document 'doc-id-fa876c'.
+[2023-10-26T23:48:15Z] [INFO] [tNote-AppServer-1] [HealthCheck] System status: OK. DB replication lag: 4ms.
+[2023-10-26T23:49:00Z] [INFO] [tNote-AppServer-2] [AuthService] User 'susan.hr' logged in successfully from 102.88.10.22.
+[2023-10-26T23:49:30Z] [INFO] [tNote-AppServer-4] [UploadHandler] User 'susan.hr' successfully uploaded 'hiring_policy_v3.pdf'.
+[2023-10-26T23:50:00Z] [INFO] [tNote-AppServer-3] [HealthCheck] System status: OK. DB replication lag: 3ms.
+[2023-10-26T23:51:05Z] [INFO] [tNote-AppServer-5] [DocumentService] User 'mark.sales' accessed document 'doc-id-q4report'.
+[2023-10-26T23:52:11Z] [INFO] [tNote-AppServer-1] [AuthService] User 'anna.qa' logged in successfully from 102.88.9.31.
+[2023-10-26T23:52:45Z] [INFO] [tNote-AppServer-2] [UploadHandler] User 'anna.qa' successfully uploaded 'test_plan_alpha.docx'.
+[2023-10-26T23:53:20Z] [INFO] [tNote-AppServer-4] [DocumentService] User 'david.eng' accessed document 'doc-id-arch-diag'.
+[2023-10-26T23:54:00Z] [INFO] [tNote-AppServer-5] [HealthCheck] System status: OK. DB replication lag: 2ms.
+[2023-10-26T23:55:10Z] [INFO] [tNote-AppServer-2] [AuthService] User 'john.doe' logged in successfully from 192.168.1.10.
+[2023-10-26T23:56:05Z] [INFO] [tNote-AppServer-4] [DocumentService] User 'jane.smith' accessed document 'doc-id-fa876c'.
+[2023-10-26T23:57:21Z] [INFO] [tNote-AppServer-1] [HealthCheck] System status: OK. DB replication lag: 3ms.
+[2023-10-26T23:58:15Z] [INFO] [tNote-AppServer-5] [UploadHandler] User 'mark.sales' successfully uploaded 'contract_v2.pdf'.
+[2023-10-26T23:59:58Z] [INFO] [tNote-AppServer-3] [HealthCheck] System status: OK. DB replication lag: 2ms.
+[2023-10-27T00:00:01Z] [INFO] [CRON] [root] Starting nightly job: /opt/tNote/scripts/cache_cleanup_v2.sh
+[2023-10-27T00:00:02Z] [INFO] [cache_cleanup_v2.sh] Starting tNote System Cache Cleanup Script v2.
+[2023-10-27T00:00:03Z] [INFO] [cache_cleanup_v2.sh] Found 1532 expired cache files in /tmp/tNote/cache.
+[2023-10-27T00:00:08Z] [INFO] [cache_cleanup_v2.sh] Successfully deleted 1532 expired cache files.
+[2023-10-27T00:00:08Z] [INFO] [cache_cleanup_v2.sh] Cache cleanup completed.
+[2023-10-27T00:00:09Z] [INFO] [cache_cleanup_v2.sh] Security cleanup: Unsetting temporary AWS environment variables.
+[2023-10-27T00:00:09Z] [INFO] [cache_cleanup_v2.sh] AWS environment variables unset.
+[2023-10-27T00:00:10Z] [INFO] [cache_cleanup_v2.sh] Resetting firewall to default state.
+[2023-10-27T00:00:11Z] [INFO] [cache_cleanup_v2.sh] Firewall flushed.
+[2023-10-27T00:00:12Z] [INFO] [CRON] [root] Finished nightly job: /opt/tNote/scripts/cache_cleanup_v2.sh
+[2023-10-27T00:01:25Z] [ERROR] [tNote-AppServer-1] [DB_REPLICATION_MONITOR] CRITICAL: Read-replica is unreachable. Connection to db-replica-ap-east-1.tnote.internal (10.0.2.20) on port 5432 timed out.
+[2023-10-27T00:01:28Z] [ERROR] [tNote-AppServer-4] [DB_REPLICATION_MONITOR] CRITICAL: Read-replica is unreachable. Connection to db-replica-ap-east-1.tnote.internal (10.0.2.20) on port 5432 timed out.
+[2023-10-27T00:01:30Z] [WARN] [tNote-AppServer-2] [DataSync] Failed to sync document 'doc-id-ax891b' due to DB replica timeout. Will retry.
+[2023-10-27T00:01:45Z] [WARN] [tNote-AppServer-5] [DataSync] Failed to sync document 'doc-id-bg781a'. Will retry.
+[2023-10-27T00:02:40Z] [ERROR] [tNote-AppServer-3] [DB_REPLICATION_MONITOR] CRITICAL: Replication lag is infinite. Read-replica (10.0.2.20) is still unreachable.
+[2023-10-27T00:03:10Z] [ERROR] [tNote-AppServer-2] [DB_REPLICATION_MONITOR] CRITICAL: Replication lag is infinite. Read-replica is still unreachable.
+[2023-10-27T00:03:55Z] [ERROR] [tNote-AppServer-5] [UploadHandler] User 'susan.hr' failed to upload 'onboarding.pptx'. Reason: Permission Denied. Client IP: 102.88.10.22.
+[2023-10-27T00:04:18Z] [ERROR] [tNote-AppServer-1] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:04:22Z] [ERROR] [tNote-AppServer-1] [UploadHandler] User 'test.user' failed to upload 'test.txt'. Reason: Permission Denied. Client IP: 102.88.15.99.
+[2023-10-27T00:04:50Z] [ERROR] [tNote-AppServer-3] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:05:11Z] [ERROR] [tNote-AppServer-1] [UploadHandler] User 'cindy.pm' failed to upload 'project_plan_v3.docx'. Reason: Permission Denied. Client IP: 102.88.1.45.
+[2023-10-27T00:05:15Z] [ERROR] [tNote-AppServer-5] [DB_REPLICATION_MONITOR] CRITICAL: Replication lag is infinite. Read-replica is still unreachable.
+[2023-10-27T00:05:33Z] [WARN] [tNote-AppServer-3] [DataSync] Failed to sync document 'doc-id-cz990c'. Will retry.
+[2023-10-27T00:05:48Z] [ERROR] [tNote-AppServer-4] [UploadHandler] User 'anna.qa' failed to upload 'bug_report_media.zip'. Reason: Permission Denied. Client IP: 102.88.9.31.
+[2023-10-27T00:06:01Z] [ERROR] [tNote-AppServer-2] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:06:05Z] [ERROR] [tNote-AppServer-2] [UploadHandler] User 'mark.sales' failed to upload 'Q4_Targets.xlsx'. Reason: Permission Denied. Client IP: 102.88.12.50.
+[2023-10-27T00:06:21Z] [ERROR] [tNote-AppServer-1] [DB_REPLICATION_MONITOR] CRITICAL: Read-replica is unreachable. Connection to db-replica-eu-west-1.tnote.internal (10.0.3.20) on port 5432 timed out.
+[2023-10-27T00:06:30Z] [ERROR] [tNote-AppServer-4] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:06:54Z] [ERROR] [tNote-AppServer-2] [UploadHandler] User 'david.eng' failed to upload 'debug_log.txt'. Reason: Permission Denied. Client IP: 102.88.3.12.
+[2023-10-27T00:07:02Z] [WARN] [tNote-AppServer-1] [DataSync] Failed to sync document 'doc-id-de123f'. Will retry.
+[2023-10-27T00:07:11Z] [ERROR] [tNote-AppServer-3] [UploadHandler] User 'cindy.pm' failed to upload 'meeting_notes_urgent.txt'. Reason: Permission Denied. Client IP: 102.88.1.45.
+[2023-10-27T00:07:35Z] [ERROR] [tNote-AppServer-5] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:07:48Z] [ERROR] [tNote-AppServer-5] [UploadHandler] User 'ivan.dev' failed to upload 'hotfix.patch'. Reason: Permission Denied. Client IP: 102.88.3.18.
+[2023-10-27T00:08:00Z] [ERROR] [tNote-AppServer-3] [DB_REPLICATION_MONITOR] CRITICAL: Replication lag is infinite. Read-replica is still unreachable.
+[2023-10-27T00:08:20Z] [ERROR] [tNote-AppServer-1] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:08:22Z] [ERROR] [tNote-AppServer-1] [UploadHandler] User 'anna.qa' failed to upload 'test_results.csv'. Reason: Permission Denied. Client IP: 102.88.9.31.
+[2023-10-27T00:08:41Z] [WARN] [tNote-AppServer-4] [DataSync] Failed to sync document 'doc-id-ef456g'. Will retry.
+[2023-10-27T00:08:55Z] [ERROR] [tNote-AppServer-4] [UploadHandler] User 'david.eng' failed to upload 'server.log.gz'. Reason: Permission Denied. Client IP: 102.88.3.12.
+[2023-10-27T00:09:03Z] [ERROR] [tNote-AppServer-2] [DB_REPLICATION_MONITOR] CRITICAL: Read-replica is unreachable. Connection to db-replica-us-west-2.tnote.internal (10.0.4.20) on port 5432 timed out.
+[2023-10-27T00:09:15Z] [ERROR] [tNote-AppServer-2] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:09:33Z] [ERROR] [tNote-AppServer-3] [UploadHandler] User 'kevin.lead' failed to upload 'meeting_summary.pdf'. Reason: Permission Denied. Client IP: 102.88.1.46.
+[2023-10-27T00:09:59Z] [ERROR] [tNote-AppServer-1] [UploadHandler] User 'susan.hr' failed to upload 'policy_update.docx'. Reason: Permission Denied. Client IP: 102.88.10.22.
+[2023-10-27T00:10:05Z] [ERROR] [tNote-AppServer-2] [DB_REPLICATION_MONITOR] CRITICAL: Database replication has been down for 9 minutes. Escalating to P0.
+[2023-10-27T00:10:18Z] [ERROR] [tNote-AppServer-5] [UploadHandler] User 'mark.sales' failed to upload 'client_list.csv'. Reason: Permission Denied. Client IP: 102.88.12.50.
+[2023-10-27T00:10:31Z] [WARN] [tNote-AppServer-5] [DataSync] Failed to sync document 'doc-id-gh789i'. Will retry.
+[2023-10-27T00:10:45Z] [ERROR] [tNote-AppServer-3] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:11:01Z] [ERROR] [tNote-AppServer-3] [UploadHandler] User 'david.eng' failed to upload 'strace_output.txt'. Reason: Permission Denied. Client IP: 102.88.3.12.
+[2023-10-27T00:11:08Z] [ERROR] [tNote-AppServer-4] [DB_REPLICATION_MONITOR] CRITICAL: Replication lag is infinite. Read-replica is still unreachable.
+[2023-10-27T00:11:23Z] [ERROR] [tNote-AppServer-4] [UploadHandler] User 'cindy.pm' failed to upload 'roadmap_Q1.pptx'. Reason: Permission Denied. Client IP: 102.88.1.45.
+[2023-10-27T00:11:40Z] [ERROR] [tNote-AppServer-1] [UploadHandler] User 'ivan.dev' failed to upload 'db_schema.sql'. Reason: Permission Denied. Client IP: 102.88.3.18.
+[2023-10-27T00:11:55Z] [ERROR] [tNote-AppServer-2] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:12:05Z] [WARN] [tNote-AppServer-2] [DataSync] Failed to sync document 'doc-id-ij012k'. Will retry.
+[2023-10-27T00:12:13Z] [ERROR] [tNote-AppServer-2] [UploadHandler] User 'anna.qa' failed to upload 'performance_metrics.csv'. Reason: Permission Denied. Client IP: 102.88.9.31.
+[2023-10-27T00:12:30Z] [ERROR] [tNote-AppServer-5] [DB_REPLICATION_MONITOR] CRITICAL: Replication lag is infinite. Read-replica is still unreachable.
+[2023-10-27T00:12:45Z] [ERROR] [tNote-AppServer-5] [UploadHandler] User 'kevin.lead' failed to upload 'P0_incident_report_template.docx'. Reason: Permission Denied. Client IP: 102.88.1.46.
+[2023-10-27T00:13:02Z] [ERROR] [tNote-AppServer-1] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:13:09Z] [ERROR] [tNote-AppServer-1] [UploadHandler] User 'cindy.pm' failed to upload 'user_feedback.xlsx'. Reason: Permission Denied. Client IP: 102.88.1.45.
+[2023-10-27T00:13:22Z] [ERROR] [tNote-AppServer-3] [UploadHandler] User 'mark.sales' failed to upload 'presentation.pptx'. Reason: Permission Denied. Client IP: 102.88.12.50.
+[2023-10-27T00:13:38Z] [WARN] [tNote-AppServer-3] [DataSync] Failed to sync document 'doc-id-kl345m'. Will retry.
+[2023-10-27T00:13:51Z] [ERROR] [tNote-AppServer-4] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:14:00Z] [ERROR] [tNote-AppServer-3] [DB_REPLICATION_MONITOR] CRITICAL: Database replication has been down for 13 minutes.
+[2023-10-27T00:14:05Z] [ERROR] [tNote-AppServer-4] [UploadHandler] User 'david.eng' failed to upload 'config.yaml'. Reason: Permission Denied. Client IP: 102.88.3.12.
+[2023-10-27T00:14:18Z] [ERROR] [tNote-AppServer-2] [UploadHandler] User 'susan.hr' failed to upload 'benefits_summary.pdf'. Reason: Permission Denied. Client IP: 102.88.10.22.
+[2023-10-27T00:14:33Z] [ERROR] [tNote-AppServer-5] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:14:46Z] [ERROR] [tNote-AppServer-5] [UploadHandler] User 'anna.qa' failed to upload 'regression_suite.zip'. Reason: Permission Denied. Client IP: 102.88.9.31.
+[2023-10-27T00:15:01Z] [ERROR] [tNote-AppServer-1] [DB_REPLICATION_MONITOR] CRITICAL: Replication lag is infinite. Read-replica is still unreachable.
+[2023-10-27T00:15:10Z] [WARN] [tNote-AppServer-1] [DataSync] Failed to sync document 'doc-id-mn678o'. Will retry.
+[2023-10-27T00:15:21Z] [ERROR] [tNote-AppServer-1] [UploadHandler] User 'kevin.lead' failed to upload 'budget_review.xlsx'. Reason: Permission Denied. Client IP: 102.88.1.46.
+[2023-10-27T00:15:35Z] [ERROR] [tNote-AppServer-3] [UploadHandler] User 'ivan.dev' failed to upload 'api_docs.html'. Reason: Permission Denied. Client IP: 102.88.3.18.
+[2023-10-27T00:15:50Z] [ERROR] [tNote-AppServer-2] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:16:03Z] [ERROR] [tNote-AppServer-2] [UploadHandler] User 'cindy.pm' failed to upload 'sprint_planning.docx'. Reason: Permission Denied. Client IP: 102.88.1.45.
+[2023-10-27T00:16:15Z] [ERROR] [tNote-AppServer-4] [DB_REPLICATION_MONITOR] CRITICAL: Replication lag is infinite. Read-replica is still unreachable.
+[2023-10-27T00:16:29Z] [ERROR] [tNote-AppServer-4] [UploadHandler] User 'mark.sales' failed to upload 'deal_memo.pdf'. Reason: Permission Denied. Client IP: 102.88.12.50.
+[2023-10-27T00:16:42Z] [WARN] [tNote-AppServer-4] [DataSync] Failed to sync document 'doc-id-op901q'. Will retry.
+[2023-10-27T00:16:58Z] [ERROR] [tNote-AppServer-5] [UploadHandler] User 'david.eng' failed to upload 'tcpdump.pcap'. Reason: Permission Denied. Client IP: 102.88.3.12.
+[2023-10-27T00:17:11Z] [ERROR] [tNote-AppServer-1] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:17:25Z] [ERROR] [tNote-AppServer-1] [UploadHandler] User 'kevin.lead' failed to upload 'org_chart.png'. Reason: Permission Denied. Client IP: 102.88.1.46.
+[2023-10-27T00:17:40Z] [ERROR] [tNote-AppServer-3] [DB_REPLICATION_MONITOR] CRITICAL: Database replication has been down for 16 minutes.
+[2023-10-27T00:17:55Z] [ERROR] [tNote-AppServer-3] [UploadHandler] User 'anna.qa' failed to upload 'load_test.jmx'. Reason: Permission Denied. Client IP: 102.88.9.31.
+[2023-10-27T00:18:09Z] [ERROR] [tNote-AppServer-2] [UploadHandler] User 'ivan.dev' failed to upload 'deployment.sh'. Reason: Permission Denied. Client IP: 102.88.3.18.
+[2023-10-27T00:18:21Z] [WARN] [tNote-AppServer-2] [DataSync] Failed to sync document 'doc-id-qr234s'. Will retry.
+[2023-10-27T00:18:34Z] [ERROR] [tNote-AppServer-5] [S3_CLIENT] Failed to assume role for S3 access. No credentials provided.
+[2023-10-27T00:18:45Z] [ERROR] [tNote-AppServer-5] [UploadHandler] User 'cindy.pm' failed to upload 'marketing_assets.zip'. Reason: Permission Denied. Client IP: 102.88.1.45.
+[2023-10-27T00:19:00Z] [ERROR] [tNote-AppServer-SYSTEM] [GlobalMonitor] ALERT: API error rate for UploadHandler exceeds 95% threshold.
+[2023-10-27T00:19:01Z] [ERROR] [tNote-AppServer-SYSTEM] [GlobalMonitor] ALERT: Database replication lag exceeds 15-minute threshold for all regions. Escalating to P0.

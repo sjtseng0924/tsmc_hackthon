@@ -1,0 +1,62 @@
+[
+  {
+    "timestamp": "2023-10-27T09:01:03Z",
+    "user": "Cindy",
+    "role": "PM",
+    "message": "@here @Kevin @David 緊急情況！早上開始陸續收到大量使用者回報，他們無法上傳任何檔案到 tNote。錯誤訊息是『Upload Failed: Permission Denied』。"
+  },
+  {
+    "timestamp": "2023-10-27T09:02:15Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "收到。David，你在線上嗎？這聽起來像是權限問題。Cindy，除了上傳失敗，還有其他問題嗎？"
+  },
+  {
+    "timestamp": "2023-10-27T09:03:40Z",
+    "user": "David",
+    "role": "Engineer",
+    "message": "在。我正在查。第一時間檢查了 IAM 角色和 S3 儲存桶策略，跟上次出事後一樣，配置都是對的，最近也沒有任何變更紀錄。這很奇怪。"
+  },
+  {
+    "timestamp": "2023-10-27T09:05:22Z",
+    "user": "Cindy",
+    "role": "PM",
+    "message": "更糟的來了！有兩個部門回報，他們昨晚加班到半夜，今天早上回來發現昨天午夜 (UTC 00:00) 過後編輯的所有會議記錄和筆記內容都不見了！這絕對是 P0 等級的災難！"
+  },
+  {
+    "timestamp": "2023-10-27T09:06:10Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "什麼？資料遺失？這比上傳失敗嚴重得多！David，優先調查資料遺失！這聽起來像是資料庫出問題了。檢查一下主從資料庫的狀態！"
+  },
+  {
+    "timestamp": "2023-10-27T09:08:30Z",
+    "user": "David",
+    "role": "Engineer",
+    "message": "了解。我剛看了監控，從 UTC 00:01 開始，所有讀取副本（Read Replicas）的連線都逾時了，主從複製完全中斷！這解釋了為什麼新資料看不到。但我完全想不通為什麼會這樣，我們的網路監控沒有任何警報，VPC Flow Logs 也沒有異常。"
+  },
+  {
+    "timestamp": "2023-10-27T09:11:55Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "等一下... 權限問題和資料庫複製中斷，兩個問題都精準地從午夜 00:00 開始。這不可能只是巧合。一個是應用程式權限，一個是資料庫網路，這兩個看似完全無關的東西怎麼會同時壞掉？"
+  },
+  {
+    "timestamp": "2023-10-27T09:14:08Z",
+    "user": "Cindy",
+    "role": "PM",
+    "message": "使用者抱怨的訊息越來越多了。我們有任何方向嗎？"
+  },
+  {
+    "timestamp": "2023-10-27T09:16:45Z",
+    "user": "David",
+    "role": "Engineer",
+    "message": "我現在很混亂。我查了應用伺服器的日誌，裡面充滿了『Permission Denied』和『Connection timed out』的錯誤，都從 00:01 之後開始。我們是不是漏掉了什麼系統級別的變更？但最近沒有任何部署啊。"
+  },
+  {
+    "timestamp": "2023-10-27T09:18:00Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "我們在兜圈子。傳統的方法查不出來。David，把我們現有的所有證據都餵給 AI 試試。把出問題時間點前後的伺服器日誌、上次那個出問題的腳本、還有上次的結案報告，全部給它。看看它能不能從這些看似無關的資料中找到我們忽略的關聯性。對了，如果Ivan有空也拉他進來。"
+  }
+]

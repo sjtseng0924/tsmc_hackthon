@@ -1,0 +1,49 @@
+2023-10-26 23:45:12.100 UTC [3448] [chatbot_db] LOG:  connection received: host=chatbot-app-2.internal [10.0.5.51]
+2023-10-26 23:45:12.400 UTC [3448] [chatbot_db] LOG:  connection authorized: user=chatbot_service database=chatbot_db
+2023-10-26 23:46:00.500 UTC [3449] [rag_meta_db] LOG:  connection received: host=rag-service-worker-3.internal [10.0.6.62]
+2023-10-26 23:46:00.800 UTC [3449] [rag_meta_db] LOG:  connection authorized: user=rag_worker database=rag_meta_db
+2023-10-26 23:47:22.321 UTC [1234] [general] LOG:  checkpoint starting: time
+2023-10-26 23:48:10.987 UTC [1234] [general] LOG:  checkpoint complete: wrote 512 buffers (3.1%)
+2023-10-26 23:50:30.123 UTC [3450] [chatbot_db] LOG:  connection received: host=chatbot-app-1.internal [10.0.5.50]
+2023-10-26 23:50:30.456 UTC [3450] [chatbot_db] LOG:  connection authorized: user=chatbot_service database=chatbot_db application_name=psql
+2023-10-26 23:51:15.123 UTC [3451] [tnote_db] LOG:  autovacuum: processing table "public.documents"
+2023-10-26 23:52:00.789 UTC [1234] [general] LOG:  checkpoint starting: time
+2023-10-26 23:52:45.123 UTC [1234] [general] LOG:  checkpoint complete: wrote 630 buffers (3.8%)
+2023-10-26 23:53:01.001 UTC [3452] [rag_meta_db] LOG:  statement: SELECT COUNT(*) FROM embeddings_queue;
+2023-10-26 23:54:10.200 UTC [3453] [chatbot_db] LOG:  statement: SELECT * FROM conversation_history WHERE user_id = 'user123' LIMIT 10;
+2023-10-26 23:55:00.000 UTC [3454] [tnote_db] LOG:  autovacuum: processing table "public.users"
+2023-10-26 23:56:40.400 UTC [3455] [rag_meta_db] LOG:  connection received: host=rag-service-worker-2.internal [10.0.6.61]
+2023-10-26 23:56:40.700 UTC [3455] [rag_meta_db] LOG:  connection authorized: user=rag_worker database=rag_meta_db
+2023-10-26 23:57:55.789 UTC [1234] [general] LOG:  checkpoint starting: time
+2023-10-26 23:58:33.123 UTC [1234] [general] LOG:  checkpoint complete: wrote 480 buffers (2.9%)
+2023-10-26 23:59:50.123 UTC [3456] [tnote_db] LOG:  received replication command: IDENTIFY_SYSTEM from primary at host=db-primary.tnote.internal (10.0.1.10)
+2023-10-26 23:59:55.456 UTC [3456] [tnote_db] LOG:  started streaming WAL from primary at 1A/30000000 on timeline 1
+2023-10-27 00:00:15.555 UTC [3458] [rag_meta_db] LOG:  connection received: host=rag-service-worker-1.internal [10.0.6.60]
+2023-10-27 00:00:15.888 UTC [3458] [rag_meta_db] LOG:  connection authorized: user=rag_worker database=rag_meta_db
+2023-10-27 00:00:55.789 UTC [1234] [general] LOG:  checkpoint complete: wrote 819 buffers (5.0%); 0 WAL file(s) added, 0 removed, 0 recycled
+2023-10-27 00:01:25.800 UTC [3456] [tnote_db] FATAL:  could not receive data from WAL stream: server closed the connection unexpectedly
+2023-10-27 00:01:25.801 UTC [3456] [tnote_db] LOG:  replication connection to primary at "host=db-primary.tnote.internal port=5432" lost
+2023-10-27 00:01:25.802 UTC [3456] [tnote_db] DETAIL:  The connection to the primary server was lost. The replica will attempt to reconnect.
+2023-10-27 00:01:30.900 UTC [4567] [tnote_db] LOG:  fetching timeline history
+2023-10-27 00:01:40.222 UTC [3458] [rag_meta_db] LOG:  could not receive data from client: Connection reset by peer
+2023-10-27 00:01:42.333 UTC [4570] [rag_meta_db] LOG:  re-attempting to connect to primary... host=rag-service-worker-1.internal [10.0.6.60]
+2023-10-27 00:01:55.950 UTC [4567] [tnote_db] FATAL:  could not connect to the primary server: connection timed out
+2023-10-27 00:02:07.350 UTC [4570] [rag_meta_db] FATAL:  could not connect to the primary server: connection timed out
+2023-10-27 00:02:15.800 UTC [4571] [chatbot_db] LOG:  re-attempting to connect to client... host=chatbot-app-1.internal [10.0.5.50]
+2023-10-27 00:02:30.100 UTC [4568] [tnote_db] LOG:  re-attempting to connect to primary...
+2023-10-27 00:02:40.850 UTC [4571] [chatbot_db] FATAL:  could not connect to the client: connection timed out
+2023-10-27 00:02:55.150 UTC [4568] [tnote_db] FATAL:  could not connect to the primary server: connection timed out
+2023-10-27 00:03:05.110 UTC [4572] [chatbot_db] LOG:  re-attempting to connect to client... host=chatbot-app-2.internal [10.0.5.51]
+2023-10-27 00:03:30.200 UTC [4569] [tnote_db] LOG:  re-attempting to connect to primary...
+2023-10-27 00:03:30.250 UTC [4573] [rag_meta_db] LOG:  re-attempting to connect to primary... host=rag-service-worker-2.internal [10.0.6.61]
+2023-10-27 00:03:55.250 UTC [4569] [tnote_db] FATAL:  could not connect to the primary server: connection timed out
+2023-10-27 00:03:55.300 UTC [4572] [chatbot_db] FATAL:  could not connect to the client: connection timed out
+2023-10-27 00:04:00.000 UTC [1234] [general] LOG:  checkpoint starting: time
+2023-10-27 00:04:05.350 UTC [4573] [rag_meta_db] FATAL:  could not connect to the primary server: connection timed out
+2023-10-27 00:04:30.200 UTC [4574] [tnote_db] LOG:  re-attempting to connect to primary...
+2023-10-27 00:04:55.250 UTC [4574] [tnote_db] FATAL:  could not connect to the primary server: connection timed out
+2023-10-27 00:15:00.100 UTC [4600] [tnote_db] LOG:  re-attempting to connect to primary...
+2023-10-27 00:15:25.150 UTC [4600] [tnote_db] FATAL:  could not connect to the primary server: connection timed out
+2023-10-27 00:15:30.200 UTC [4601] [chatbot_db] FATAL:  could not connect to the client: connection timed out
+2023-10-27 00:15:45.300 UTC [4602] [rag_meta_db] FATAL:  could not connect to the primary server: connection timed out
+2023-10-27 00:20:00.000 UTC [1234] [general] LOG:  unable to complete checkpoint, continuing to retry
