@@ -3,6 +3,8 @@ import os
 import json
 import vertexai
 from vertexai.generative_models import GenerativeModel
+from app.config import settings
+
 
 _model = None
 
@@ -11,13 +13,13 @@ def init_models():
     global _model
     if _model is None:
         # 設置認證
-        creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        creds_path = settings.GOOGLE_APPLICATION_CREDENTIALS
         if creds_path:
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
         
         vertexai.init(
-            project=os.environ.get("VERTEX_PROJECT", "your-gcp-project-id"),
-            location=os.environ.get("VERTEX_LOCATION", "us-central1"),
+            project=settings.VERTEX_PROJECT,
+            location=settings.VERTEX_LOCATION,
         )
         _model = GenerativeModel("gemini-2.5-flash")
 

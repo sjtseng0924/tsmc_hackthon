@@ -81,6 +81,10 @@ class DiscordService:
         async def on_message(message: discord.Message) -> None:
             if message.author == client.user:
                 return
+            if client.user is None:
+                return
+            if client.user not in message.mentions:
+                return
             if message.content:
                 author_name = message.author.display_name
                 author_id = message.author.id

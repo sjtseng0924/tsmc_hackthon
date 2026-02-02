@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     DISCORD_TOKEN: Optional[str] = None
     DISCORD_WEBHOOK_URL: Optional[str] = None
     PORT: int = 8000
+    
+    GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
+    VERTEX_PROJECT: Optional[str] = None
+    VERTEX_LOCATION: Optional[str] = "us-central1"
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
