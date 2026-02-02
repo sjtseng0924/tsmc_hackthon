@@ -62,6 +62,7 @@
   {
     "timestamp": "2023-10-27T09:20:00Z",
     "user": "David",
+    "role": "Engineer",
     "message": "@IT超強事件助理 緊急情況，系統從 UTC 00:00 之後出現複合型故障，使用者無法上傳檔案，新寫入的資料也看不到了。這是應用伺服器的主日誌 `tNote_app_server_v1.log`，請立即接手調查。"
   }
 ]
