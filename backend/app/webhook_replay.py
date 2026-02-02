@@ -23,9 +23,9 @@ def _candidate_scenario_paths() -> list[Path]:
     backend_root = file_path.parents[1]
     cwd = Path.cwd()
     return [
-        repo_root / "Workshop" / "Communication Scenario" / "Issue Discussion.json",
-        backend_root / "Workshop" / "Communication Scenario" / "Issue Discussion.json",
-        cwd / "Workshop" / "Communication Scenario" / "Issue Discussion.json",
+        repo_root / "Workshop" / "CommunicationScenario" / "IssueDiscussion.json",
+        backend_root / "Workshop" / "CommunicationScenario" / "IssueDiscussion.json",
+        cwd / "Workshop" / "CommunicationScenario" / "IssueDiscussion.json",
     ]
 
 
