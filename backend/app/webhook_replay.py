@@ -8,6 +8,8 @@ from typing import Iterable, Optional
 
 import aiohttp
 
+from app.config import settings
+
 
 @dataclass(frozen=True)
 class ReplayMessage:
@@ -17,11 +19,9 @@ class ReplayMessage:
     content: str
 
 
-def _scenario_paths() -> list[Path]:
-    file_path = Path(__file__).resolve()
-    repo_root = file_path.parents[1]
+def _scenario_paths() -> Path:
+    repo_root = Path(settings.BACKEND_ROOT)
     return repo_root / "Workshop" / "CommunicationScenario" / "IssueDiscussion.json"
-
 
 
 def _parse_timestamp(value: str) -> datetime:

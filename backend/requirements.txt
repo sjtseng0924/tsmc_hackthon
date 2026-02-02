@@ -11,6 +11,7 @@ google-cloud-aiplatform
 # Web Framework (if needed)
 fastapi
 uvicorn[standard]
+pydantic-settings
 
 # Database
 alembic
