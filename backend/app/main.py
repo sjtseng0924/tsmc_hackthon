@@ -9,6 +9,13 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+# Gemini 相關導入
+try:
+    from app.gemini import run_agent
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
 load_dotenv(override=True)
 
 logging.basicConfig(level=logging.INFO)
@@ -31,6 +38,17 @@ class DiscordSendRequest(BaseModel):
 class DiscordSendResponse(BaseModel):
     message_id: int
     channel_id: int
+
+
+class GeminiAgentRequest(BaseModel):
+    user_message: str = Field(..., description="使用者訊息")
+    rag_context: str = Field(default="", description="RAG 上下文")
+
+
+class GeminiAgentResponse(BaseModel):
+    success: bool
+    data: Optional[dict] = None
+    error: Optional[str] = None
 
 
 def _get_token() -> Optional[str]:
@@ -117,6 +135,27 @@ async def send_discord_message(payload: DiscordSendRequest) -> DiscordSendRespon
 
     message = await channel.send(payload.content)
     return DiscordSendResponse(message_id=message.id, channel_id=channel.id)
+
+
+@app.post("/agent", response_model=GeminiAgentResponse)
+async def agent_handler(payload: GeminiAgentRequest) -> GeminiAgentResponse:
+    """呼叫 Gemini Agent"""
+    if not GEMINI_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Gemini Agent not available")
+
+    try:
+        logger.info(f"收到訊息: {payload.user_message}")
+
+        result = run_agent(
+            user_message=payload.user_message,
+            rag_context=payload.rag_context,
+        )
+
+        return GeminiAgentResponse(success=True, data=result)
+
+    except Exception as e:
+        logger.error(f"Gemini Agent 錯誤: {str(e)}")
+        return GeminiAgentResponse(success=False, error=str(e))
 
 
 if __name__ == "__main__":

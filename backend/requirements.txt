@@ -6,6 +6,7 @@ aiohttp
 google-cloud-storage
 google-cloud-firestore
 google-auth
+google-cloud-aiplatform
 
 # Web Framework (if needed)
 fastapi

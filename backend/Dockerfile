@@ -25,6 +25,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY . .
 
+# Copy GCP service account key
+COPY service-account-key.json .
+
 # Expose port (adjust as needed)
 EXPOSE 8000
 
