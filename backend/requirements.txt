@@ -23,3 +23,6 @@ psycopg2-binary
 # Utilities
 python-dotenv
 requests
+pgvector
+
+

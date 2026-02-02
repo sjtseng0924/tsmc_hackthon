@@ -4,6 +4,7 @@ import json
 import vertexai
 from vertexai import agent_engines
 from app.config import settings
+from app.rag import retrieve_code_from_sql, search_knowledge_base
 
 
 _agent = None
@@ -34,7 +35,7 @@ def init_models():
 
 def run_agent(
     user_message: str,
-    rag_context: str,
+    rag_context: str = "",
 ) -> dict:
     init_models()
 
