@@ -4,7 +4,7 @@ import json
 import vertexai
 from vertexai import agent_engines
 from app.config import settings
-#from app.rag import retrieve_code_from_sql, search_knowledge_base
+from app.rag import list_knowledge_files, retrieve_knowledge
 
 
 _agent = None
@@ -23,8 +23,8 @@ def init_models():
             location=settings.VERTEX_LOCATION,
         )
         _agent = agent_engines.LanggraphAgent(
-            model="gemini-3-pro-preview",
-            tools=[],
+            model="gemini-2.5-pro",
+            tools=[list_knowledge_files, retrieve_knowledge],
             model_kwargs={
                 "temperature": 0.2,
                 "max_output_tokens": 800,
@@ -39,7 +39,12 @@ def run_agent(
 ) -> dict:
     init_models()
 
-    prompt = f"""以下是使用者討論事件的聊天紀錄 {user_message}，以下是之前相似事件的結案報告{rag_context}"""
+    prompt = f"""
+你是一個手機 App 使用助手。
+使用者輸入：{user_message}
+歷史參考：
+{rag_context}
+"""
 
     response = _agent.query(input={"messages": [("user", prompt)]})
 

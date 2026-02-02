@@ -9,7 +9,7 @@ sys.path.append(str(project_root)) # add backend to path
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.database import SessionLocal
-from app.models import KnowledgeChunk
+from app.models import Knowledge
 
 def ingest_data():
     # find knowledge_base folder
@@ -55,10 +55,10 @@ def ingest_data():
             filename = os.path.basename(source)
             
             # create db object
-            db_obj = KnowledgeChunk(
-                source_filename=filename,
-                chunk_index=i,
-                content=chunk.page_content
+            db_obj = Knowledge(
+                filename=filename,
+                content=chunk.page_content,
+                # vector=... # Todo: compute embedding if needed, or let it be null if allowed
             )
             added_chunks.append(db_obj)
             count += 1
