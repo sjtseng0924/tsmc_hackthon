@@ -1,11 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CaseListView from '../views/CaseListView.vue'
 import CaseDetailView from '../views/CaseDetailView.vue'
+import DashboardView from '../views/DashboardView.vue'
 
 const routes = [
   {
     path: '/',
-    redirect: '/cases',
+    redirect: '/dashboard',
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: DashboardView,
   },
   {
     path: '/cases',

@@ -74,3 +74,5 @@ export const getCategories = () => {
   // TODO: Replace mock data with backend API
   return [...new Set(mockCases.map((item) => item.category))]
 }
+
+// TODO: Replace with backend dashboard API
