@@ -54,7 +54,8 @@ class TaxonomyResponse(BaseModel):
 # Messages linked to knowledge
 class MessageBase(BaseModel):
     knowledge_id: Optional[int] = None
-    timestamp: datetime  # 訊息時間（同 created_at 概念）
+    external_id: str
+    timestamp: datetime
     user: Optional[str] = None
     role: Optional[str] = None
     content: str

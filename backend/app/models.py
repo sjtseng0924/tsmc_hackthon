@@ -49,6 +49,7 @@ class Message(Base):
     knowledge_id = Column(Integer, ForeignKey('knowledge.id'), nullable=True, index=True)
     knowledge = relationship("Knowledge", back_populates="messages")
     
+    external_id = Column(String, unique=True, index=True)  # e.g., Discord message.id
     timestamp = Column(DateTime, nullable=True)
     user = Column(String, nullable=True)
     role = Column(String, nullable=True)
