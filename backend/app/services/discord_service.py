@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import json
 import logging
 from typing import Optional
 
@@ -126,7 +127,7 @@ class DiscordService:
                     content=prompt,
                 )
 
-                await self._run_solution_loop(
+                await self._dispatch_agent_reply(
                     channel_id=channel_id,
                     user_prompt=prompt,
                     client=client,
@@ -196,13 +197,13 @@ class DiscordService:
             reply = result.get("message")
 
             if mode == "solution" and isinstance(structured, dict):
-                progress = structured.get("progress") or []
-                for line in progress:
+                updates = structured.get("updates") or structured.get("progress") or []
+                for line in updates:
                     if line:
                         await channel.send(str(line))
 
                 reply_text = structured.get("reply", "")
-                if reply_text:
+                if reply_text and structured.get("status", "final") == "final":
                     await self._send_reply(channel_id, client, channel, reply_text)
 
                 status = structured.get("status", "final")
@@ -217,6 +218,19 @@ class DiscordService:
                 await channel.send("模型回覆為空，請再試一次或換個說法。")
                 return
 
+            updates, status, summary = _extract_solution_text(reply)
+            for line in updates:
+                await channel.send(line)
+
+            if status == "continue":
+                self._append_history(channel_id, "user", "繼續")
+                current_prompt = "繼續"
+                continue
+
+            if summary:
+                await self._send_reply(channel_id, client, channel, summary)
+                return
+
             progress_lines, final_reply = _split_progress_lines(reply)
             for line in progress_lines:
                 await channel.send(line)
@@ -226,6 +240,43 @@ class DiscordService:
 
         await channel.send("已達到最大查詢輪數，若需繼續請再描述需求。")
 
+    async def _dispatch_agent_reply(
+        self,
+        *,
+        channel_id: int,
+        user_prompt: str,
+        client: discord.Client,
+        channel: discord.abc.Messageable,
+    ) -> None:
+        result = await asyncio.to_thread(
+            run_agent,
+            user_message=user_prompt,
+            rag_context="",
+            conversation_history=self._get_history(channel_id),
+        )
+
+        if not isinstance(result, dict):
+            await self._send_reply(channel_id, client, channel, str(result))
+            return
+
+        mode = result.get("mode")
+        reply = result.get("message") or ""
+
+        if mode == "solution":
+            await self._run_solution_loop(
+                channel_id=channel_id,
+                user_prompt=user_prompt,
+                client=client,
+                channel=channel,
+            )
+            return
+
+        if not reply:
+            await channel.send("模型回覆為空，請再試一次或換個說法。")
+            return
+
+        await self._send_reply(channel_id, client, channel, reply)
+
     async def _send_reply(
         self,
         channel_id: int,
@@ -233,15 +284,16 @@ class DiscordService:
         channel: discord.abc.Messageable,
         content: str,
     ) -> None:
-        bot_msg = await channel.send(content)
-        self._append_history(channel_id, "assistant", content)
-        save_message(
-            external_id=str(bot_msg.id),
-            timestamp=bot_msg.created_at,
-            user=str(client.user),
-            role="assistant",
-            content=content,
-        )
+        for chunk in _chunk_message(content):
+            bot_msg = await channel.send(chunk)
+            self._append_history(channel_id, "assistant", chunk)
+            save_message(
+                external_id=str(bot_msg.id),
+                timestamp=bot_msg.created_at,
+                user=str(client.user),
+                role="assistant",
+                content=chunk,
+            )
 
     def _append_history(self, channel_id: int, role: str, content: str) -> None:
         items = self._history.setdefault(channel_id, [])
@@ -265,3 +317,79 @@ def _split_progress_lines(reply: str) -> tuple[list[str], str]:
         else:
             final_lines.append(line)
     return progress_lines, "\n".join(final_lines).strip()
+
+
+def _extract_solution_text(reply: str) -> tuple[list[str], str, str]:
+    updates: list[str] = []
+    summary_lines: list[str] = []
+    status = "final"
+    in_summary = False
+    status_line_text = ""
+
+    content = reply or ""
+    json_payload = _try_parse_json(content)
+    if isinstance(json_payload, dict):
+        raw_updates = json_payload.get("updates") or json_payload.get("progress") or []
+        updates.extend([str(item) for item in raw_updates if item])
+        summary = str(json_payload.get("reply") or "").strip()
+        status = str(json_payload.get("status") or "final").lower()
+        return updates, status, summary
+
+    if "[[CONTINUE]]" in content:
+        status = "continue"
+        content = content.replace("[[CONTINUE]]", "").strip()
+
+    for raw in content.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        lowered = line.lower()
+        if line.startswith("目前在看:") or line.startswith("原因:") or line.startswith("下一步:"):
+            updates.append(line)
+            continue
+        if lowered.startswith("狀態:"):
+            updates.append(line)
+            status_line_text = line.split(":", 1)[1].strip().lower()
+            continue
+        if line.startswith("總結:") or line.startswith("結論:"):
+            in_summary = True
+            summary_lines.append(line.split(":", 1)[1].strip())
+            continue
+        if in_summary:
+            summary_lines.append(raw)
+        else:
+            summary_lines.append(raw)
+
+    summary = "\n".join(summary_lines).strip()
+    if status_line_text and "繼續" in status_line_text:
+        status = "continue"
+    return updates, status, summary
+
+
+def _chunk_message(content: str, limit: int = 1900) -> list[str]:
+    if not content:
+        return [""]
+    if len(content) <= limit:
+        return [content]
+    chunks = []
+    remaining = content
+    while len(remaining) > limit:
+        split_at = remaining.rfind("\n", 0, limit)
+        if split_at == -1:
+            split_at = limit
+        chunks.append(remaining[:split_at].rstrip())
+        remaining = remaining[split_at:].lstrip("\n")
+    if remaining:
+        chunks.append(remaining)
+    return chunks
+
+
+def _try_parse_json(content: str) -> Optional[dict]:
+    text = (content or "").strip()
+    if not text.startswith("{"):
+        return None
+    try:
+        data = json.loads(text)
+    except Exception:
+        return None
+    return data if isinstance(data, dict) else None
