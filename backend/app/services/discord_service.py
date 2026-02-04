@@ -13,6 +13,7 @@ except ImportError:
     GEMINI_AVAILABLE = False
 
 from app.config import settings
+from app.services.message_service import save_message
 
 class DiscordServiceError(Exception):
     pass
@@ -72,6 +73,7 @@ class DiscordService:
         self._token = _get_token()
         self._client: Optional[discord.Client] = None
         self._task: Optional[asyncio.Task] = None
+        self._history: dict[int, list[dict]] = {}
 
     @property
     def client(self) -> Optional[discord.Client]:
@@ -114,18 +116,22 @@ class DiscordService:
                 return
 
             try:
-                # TODO: 接上 RAG/工具時，填入 rag_context
-                result = await asyncio.to_thread(
-                    run_agent,
-                    user_message=prompt,
-                    rag_context="",
+                channel_id = message.channel.id
+                self._append_history(channel_id, "user", prompt)
+                save_message(
+                    external_id=str(message.id),
+                    timestamp=message.created_at,
+                    user=str(message.author),
+                    role="user",
+                    content=prompt,
                 )
 
-                reply = result.get("message") if isinstance(result, dict) else str(result)
-                if not reply:
-                    await message.channel.send("模型回覆為空，請再試一次或換個說法。")
-                    return
-                await message.channel.send(reply)
+                await self._run_solution_loop(
+                    channel_id=channel_id,
+                    user_prompt=prompt,
+                    client=client,
+                    channel=message.channel,
+                )
             except Exception:
                 self._logger.exception("Gemini reply failed")
                 await message.channel.send("發生錯誤，請稍後再試。")
@@ -161,3 +167,101 @@ class DiscordService:
             raise DiscordInvalidChannel("Channel is not text-capable")
 
         return await channel.send(content)
+
+    async def _run_solution_loop(
+        self,
+        *,
+        channel_id: int,
+        user_prompt: str,
+        client: discord.Client,
+        channel: discord.abc.Messageable,
+    ) -> None:
+        max_turns = 4
+        current_prompt = user_prompt
+        for idx in range(max_turns):
+            result = await asyncio.to_thread(
+                run_agent,
+                user_message=current_prompt,
+                rag_context="",
+                conversation_history=self._get_history(channel_id),
+            )
+
+            if not isinstance(result, dict):
+                reply = str(result)
+                await self._send_reply(channel_id, client, channel, reply)
+                return
+
+            mode = result.get("mode")
+            structured = result.get("structured")
+            reply = result.get("message")
+
+            if mode == "solution" and isinstance(structured, dict):
+                progress = structured.get("progress") or []
+                for line in progress:
+                    if line:
+                        await channel.send(str(line))
+
+                reply_text = structured.get("reply", "")
+                if reply_text:
+                    await self._send_reply(channel_id, client, channel, reply_text)
+
+                status = structured.get("status", "final")
+                if status != "continue":
+                    return
+
+                self._append_history(channel_id, "user", "繼續")
+                current_prompt = "繼續"
+                continue
+
+            if not reply:
+                await channel.send("模型回覆為空，請再試一次或換個說法。")
+                return
+
+            progress_lines, final_reply = _split_progress_lines(reply)
+            for line in progress_lines:
+                await channel.send(line)
+            if final_reply:
+                await self._send_reply(channel_id, client, channel, final_reply)
+            return
+
+        await channel.send("已達到最大查詢輪數，若需繼續請再描述需求。")
+
+    async def _send_reply(
+        self,
+        channel_id: int,
+        client: discord.Client,
+        channel: discord.abc.Messageable,
+        content: str,
+    ) -> None:
+        bot_msg = await channel.send(content)
+        self._append_history(channel_id, "assistant", content)
+        save_message(
+            external_id=str(bot_msg.id),
+            timestamp=bot_msg.created_at,
+            user=str(client.user),
+            role="assistant",
+            content=content,
+        )
+
+    def _append_history(self, channel_id: int, role: str, content: str) -> None:
+        items = self._history.setdefault(channel_id, [])
+        items.append({"role": role, "content": content})
+        if len(items) > 30:
+            self._history[channel_id] = items[-30:]
+
+    def _get_history(self, channel_id: int) -> list[dict]:
+        return list(self._history.get(channel_id, []))
+
+
+def _split_progress_lines(reply: str) -> tuple[list[str], str]:
+    progress_lines = []
+    final_lines = []
+    for line in (reply or "").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("目前在看") or stripped.startswith("進度:") or stripped.startswith("[進度]"):
+            progress_lines.append(stripped)
+        else:
+            final_lines.append(line)
+    return progress_lines, "\n".join(final_lines).strip()
