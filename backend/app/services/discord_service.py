@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-import json
 import logging
 from typing import Optional
 
@@ -14,6 +13,7 @@ except ImportError:
     GEMINI_AVAILABLE = False
 
 from app.config import settings
+from app.services import assistant_tools
 from app.services.message_service import save_message
 
 class DiscordServiceError(Exception):
@@ -75,6 +75,7 @@ class DiscordService:
         self._client: Optional[discord.Client] = None
         self._task: Optional[asyncio.Task] = None
         self._history: dict[int, list[dict]] = {}
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     @property
     def client(self) -> Optional[discord.Client]:
@@ -91,6 +92,7 @@ class DiscordService:
         intents = discord.Intents.default()
         intents.message_content = True
         client = _build_discord_client(intents)
+        self._loop = asyncio.get_running_loop()
 
         @client.event
         async def on_ready() -> None:
@@ -118,6 +120,9 @@ class DiscordService:
 
             try:
                 channel_id = message.channel.id
+                assistant_tools.set_progress_sender(
+                    _make_progress_sender(self, channel_id, self._loop)
+                )
                 self._append_history(channel_id, "user", prompt)
                 save_message(
                     external_id=str(message.id),
@@ -136,6 +141,8 @@ class DiscordService:
             except Exception:
                 self._logger.exception("Gemini reply failed")
                 await message.channel.send("發生錯誤，請稍後再試。")
+            finally:
+                assistant_tools.set_progress_sender(None)
 
         self._client = client
         self._task = asyncio.create_task(
@@ -177,9 +184,10 @@ class DiscordService:
         client: discord.Client,
         channel: discord.abc.Messageable,
     ) -> None:
-        max_turns = 4
         current_prompt = user_prompt
-        for idx in range(max_turns):
+        tool_usage_limit = 5
+        assistant_tools.reset_tool_usage_count()
+        while True:
             result = await asyncio.to_thread(
                 run_agent,
                 user_message=current_prompt,
@@ -197,48 +205,40 @@ class DiscordService:
             reply = result.get("message")
 
             if mode == "solution" and isinstance(structured, dict):
-                updates = structured.get("updates") or structured.get("progress") or []
-                for line in updates:
-                    if line:
-                        await channel.send(str(line))
-
                 reply_text = structured.get("reply", "")
-                if reply_text and structured.get("status", "final") == "final":
-                    await self._send_reply(channel_id, client, channel, reply_text)
-
                 status = structured.get("status", "final")
+                if (reply_text and status == "final") or (assistant_tools.get_tool_usage_count() >= tool_usage_limit):
+                    await self._send_reply(channel_id, client, channel, reply_text)
+                    assistant_tools.reset_tool_usage_count()
                 if status != "continue":
                     return
 
-                self._append_history(channel_id, "user", "繼續")
-                current_prompt = "繼續"
+                self._append_history(
+                    channel_id,
+                    "user",
+                    "繼續。若已足夠請直接輸出 final，避免重複查看已看過的檔案/來源。",
+                )
+                current_prompt = "繼續。若已足夠請直接輸出 final，避免重複查看已看過的檔案/來源。"
                 continue
 
             if not reply:
                 await channel.send("模型回覆為空，請再試一次或換個說法。")
                 return
 
-            updates, status, summary = _extract_solution_text(reply)
-            for line in updates:
-                await channel.send(line)
-
-            if status == "continue":
-                self._append_history(channel_id, "user", "繼續")
-                current_prompt = "繼續"
+            if "[[CONTINUE]]" in reply:
+                self._append_history(
+                    channel_id,
+                    "user",
+                    "繼續。若已足夠請直接輸出 final，避免重複查看已看過的檔案/來源。",
+                )
+                current_prompt = "繼續。若已足夠請直接輸出 final，避免重複查看已看過的檔案/來源。"
                 continue
 
-            if summary:
-                await self._send_reply(channel_id, client, channel, summary)
-                return
-
-            progress_lines, final_reply = _split_progress_lines(reply)
-            for line in progress_lines:
-                await channel.send(line)
-            if final_reply:
-                await self._send_reply(channel_id, client, channel, final_reply)
+            await self._send_reply(channel_id, client, channel, reply)
+            assistant_tools.reset_tool_usage_count()
             return
 
-        await channel.send("已達到最大查詢輪數，若需繼續請再描述需求。")
+        await channel.send("已結束查詢，若需繼續請再描述需求。")
 
     async def _dispatch_agent_reply(
         self,
@@ -305,65 +305,6 @@ class DiscordService:
         return list(self._history.get(channel_id, []))
 
 
-def _split_progress_lines(reply: str) -> tuple[list[str], str]:
-    progress_lines = []
-    final_lines = []
-    for line in (reply or "").splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if stripped.startswith("目前在看") or stripped.startswith("進度:") or stripped.startswith("[進度]"):
-            progress_lines.append(stripped)
-        else:
-            final_lines.append(line)
-    return progress_lines, "\n".join(final_lines).strip()
-
-
-def _extract_solution_text(reply: str) -> tuple[list[str], str, str]:
-    updates: list[str] = []
-    summary_lines: list[str] = []
-    status = "final"
-    in_summary = False
-    status_line_text = ""
-
-    content = reply or ""
-    json_payload = _try_parse_json(content)
-    if isinstance(json_payload, dict):
-        raw_updates = json_payload.get("updates") or json_payload.get("progress") or []
-        updates.extend([str(item) for item in raw_updates if item])
-        summary = str(json_payload.get("reply") or "").strip()
-        status = str(json_payload.get("status") or "final").lower()
-        return updates, status, summary
-
-    if "[[CONTINUE]]" in content:
-        status = "continue"
-        content = content.replace("[[CONTINUE]]", "").strip()
-
-    for raw in content.splitlines():
-        line = raw.strip()
-        if not line:
-            continue
-        lowered = line.lower()
-        if line.startswith("目前在看:") or line.startswith("原因:") or line.startswith("下一步:"):
-            updates.append(line)
-            continue
-        if lowered.startswith("狀態:"):
-            updates.append(line)
-            status_line_text = line.split(":", 1)[1].strip().lower()
-            continue
-        if line.startswith("總結:") or line.startswith("結論:"):
-            in_summary = True
-            summary_lines.append(line.split(":", 1)[1].strip())
-            continue
-        if in_summary:
-            summary_lines.append(raw)
-        else:
-            summary_lines.append(raw)
-
-    summary = "\n".join(summary_lines).strip()
-    if status_line_text and "繼續" in status_line_text:
-        status = "continue"
-    return updates, status, summary
 
 
 def _chunk_message(content: str, limit: int = 1900) -> list[str]:
@@ -384,12 +325,20 @@ def _chunk_message(content: str, limit: int = 1900) -> list[str]:
     return chunks
 
 
-def _try_parse_json(content: str) -> Optional[dict]:
-    text = (content or "").strip()
-    if not text.startswith("{"):
-        return None
-    try:
-        data = json.loads(text)
-    except Exception:
-        return None
-    return data if isinstance(data, dict) else None
+def _make_progress_sender(
+    service: "DiscordService",
+    channel_id: int,
+    loop: Optional[asyncio.AbstractEventLoop],
+):
+    def _send(message: str) -> None:
+        if not loop or not service:
+            return
+        try:
+            asyncio.run_coroutine_threadsafe(
+                service.send_message(channel_id, message),
+                loop,
+            )
+        except Exception:
+            return
+
+    return _send
