@@ -184,61 +184,33 @@ class DiscordService:
         client: discord.Client,
         channel: discord.abc.Messageable,
     ) -> None:
-        current_prompt = user_prompt
-        tool_usage_limit = 5
-        assistant_tools.reset_tool_usage_count()
-        while True:
-            result = await asyncio.to_thread(
-                run_agent,
-                user_message=current_prompt,
-                rag_context="",
-                conversation_history=self._get_history(channel_id),
-            )
+        result = await asyncio.to_thread(
+            run_agent,
+            user_message=user_prompt,
+            rag_context="",
+            conversation_history=self._get_history(channel_id),
+        )
 
-            if not isinstance(result, dict):
-                reply = str(result)
-                await self._send_reply(channel_id, client, channel, reply)
-                return
-
-            mode = result.get("mode")
-            structured = result.get("structured")
-            reply = result.get("message")
-
-            if mode == "solution" and isinstance(structured, dict):
-                reply_text = structured.get("reply", "")
-                status = structured.get("status", "final")
-                if (reply_text and status == "final") or (assistant_tools.get_tool_usage_count() >= tool_usage_limit):
-                    await self._send_reply(channel_id, client, channel, reply_text)
-                    assistant_tools.reset_tool_usage_count()
-                if status != "continue":
-                    return
-
-                self._append_history(
-                    channel_id,
-                    "user",
-                    "繼續。若已足夠請直接輸出 final，避免重複查看已看過的檔案/來源。",
-                )
-                current_prompt = "繼續。若已足夠請直接輸出 final，避免重複查看已看過的檔案/來源。"
-                continue
-
-            if not reply:
-                await channel.send("模型回覆為空，請再試一次或換個說法。")
-                return
-
-            if "[[CONTINUE]]" in reply:
-                self._append_history(
-                    channel_id,
-                    "user",
-                    "繼續。若已足夠請直接輸出 final，避免重複查看已看過的檔案/來源。",
-                )
-                current_prompt = "繼續。若已足夠請直接輸出 final，避免重複查看已看過的檔案/來源。"
-                continue
-
+        if not isinstance(result, dict):
+            reply = str(result)
             await self._send_reply(channel_id, client, channel, reply)
-            assistant_tools.reset_tool_usage_count()
             return
 
-        await channel.send("已結束查詢，若需繼續請再描述需求。")
+        mode = result.get("mode")
+        structured = result.get("structured")
+        reply = result.get("message")
+
+        if mode == "solution" and isinstance(structured, dict):
+            reply_text = structured.get("reply", "")
+            if reply_text:
+                await self._send_reply(channel_id, client, channel, reply_text)
+                return
+
+        if not reply:
+            await channel.send("模型回覆為空，請再試一次或換個說法。")
+            return
+
+        await self._send_reply(channel_id, client, channel, reply)
 
     async def _dispatch_agent_reply(
         self,

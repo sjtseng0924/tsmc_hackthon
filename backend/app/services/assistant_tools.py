@@ -11,27 +11,12 @@ from app.services.message_service import list_recent_messages, search_messages
 
 
 _progress_sender: Optional[Callable[[str], None]] = None
-_tool_usage_count: int = 0
-_tool_usage_limit: Optional[int] = None
 
 
 def set_progress_sender(sender: Optional[Callable[[str], None]]) -> None:
     global _progress_sender
     _progress_sender = sender
 
-
-def reset_tool_usage_count() -> None:
-    global _tool_usage_count
-    _tool_usage_count = 0
-
-
-def set_tool_usage_limit(limit: Optional[int]) -> None:
-    global _tool_usage_limit
-    _tool_usage_limit = limit
-
-
-def get_tool_usage_count() -> int:
-    return _tool_usage_count
 
 
 def _emit_progress(message: str) -> None:
@@ -43,12 +28,6 @@ def _emit_progress(message: str) -> None:
         return
 
 
-def _allow_tool_use() -> bool:
-    global _tool_usage_count
-    if _tool_usage_limit is not None and _tool_usage_count >= _tool_usage_limit:
-        return False
-    _tool_usage_count += 1
-    return True
 
 
 def _format_timestamp(value: Optional[datetime]) -> str:
@@ -77,8 +56,6 @@ def list_recent_discord_messages(limit: int = 20) -> str:
     List recent Discord messages stored in the database.
     Use this to understand recent conversation context.
     """
-    if not _allow_tool_use():
-        return "工具呼叫已達上限，請直接輸出最終結論。"
     items = list_recent_messages(limit=limit)
     if not items:
         return "沒有可用的 Discord 對話紀錄。"
@@ -92,8 +69,6 @@ def search_discord_messages(query: str, limit: int = 20) -> str:
     Search Discord messages by keyword.
     Use this to find relevant discussions or context.
     """
-    if not _allow_tool_use():
-        return "工具呼叫已達上限，請直接輸出最終結論。"
     items = search_messages(query=query, limit=limit)
     if not items:
         return "找不到相關的 Discord 對話紀錄。"
@@ -106,8 +81,6 @@ def list_log_files(limit: int = 20) -> str:
     """
     List available log files in the database.
     """
-    if not _allow_tool_use():
-        return "工具呼叫已達上限，請直接輸出最終結論。"
     _emit_progress("目前在看: log 檔案清單")
     limit = max(1, min(limit, 50))
     db = SessionLocal()
@@ -126,8 +99,6 @@ def search_log_entries(query: str, file_name: Optional[str] = None, limit: int =
     """
     Search log entries by keyword, optionally within a specific file.
     """
-    if not _allow_tool_use():
-        return "工具呼叫已達上限，請直接輸出最終結論。"
     source = f"log: {file_name or 'all'}"
     _emit_progress(f"目前在看: {source}\n原因: 搜尋 log 關鍵字 {query}")
     limit = max(1, min(limit, 100))
@@ -165,8 +136,6 @@ def list_code_files(limit: int = 50) -> str:
     """
     List available code files in the database.
     """
-    if not _allow_tool_use():
-        return "工具呼叫已達上限，請直接輸出最終結論。"
     _emit_progress("目前在看: code 檔案清單")
     limit = max(1, min(limit, 200))
     db = SessionLocal()
@@ -202,8 +171,6 @@ def search_code_snippets(query: str, limit: int = 5) -> str:
     """
     Search code snippets by keyword.
     """
-    if not _allow_tool_use():
-        return "工具呼叫已達上限，請直接輸出最終結論。"
     _emit_progress(f"目前在看: code 搜尋\n原因: 搜尋程式碼關鍵字 {query}")
     limit = max(1, min(limit, 20))
     if not query:
@@ -233,8 +200,6 @@ def get_code_file(filename: str, max_chars: int = 3000) -> str:
     """
     Retrieve a code file content by filename.
     """
-    if not _allow_tool_use():
-        return "工具呼叫已達上限，請直接輸出最終結論。"
     _emit_progress(f"目前在看: code {filename}\n原因: 讀取檔案內容以確認實作細節")
     if not filename:
         return "請提供要讀取的檔名。"
@@ -259,8 +224,6 @@ def list_case_reports(limit: int = 20) -> str:
     """
     List available incident reports (knowledge cases).
     """
-    if not _allow_tool_use():
-        return "工具呼叫已達上限，請直接輸出最終結論。"
     _emit_progress("目前在看: 結案報告清單")
     limit = max(1, min(limit, 50))
     db = SessionLocal()
@@ -288,8 +251,6 @@ def get_case_report(case_id: str) -> str:
     """
     Retrieve a specific incident report by case ID.
     """
-    if not _allow_tool_use():
-        return "工具呼叫已達上限，請直接輸出最終結論。"
     _emit_progress(f"目前在看: 結案報告 {case_id}\n原因: 比對過去案例找出相似根因")
     if not case_id:
         return "請提供要查詢的 case_id。"
