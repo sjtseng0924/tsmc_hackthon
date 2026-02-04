@@ -96,7 +96,7 @@ def _detect_intent(user_message: str) -> str:
     text = (user_message or "").lower()
     if any(keyword in text for keyword in ["行程", "日曆", "行事曆", "會議", "邀請", "空檔", "有空", "可用時間"]):
         return "calendar"
-    if any(keyword in text for keyword in ["報案問題", "影響範圍", "影響", "統整", "彙整", "摘要", "總結"]):
+    if any(keyword in text for keyword in ["報案問題", "影響範圍"]):
         return "summary_problem"
     if any(keyword in text for keyword in ["怎麼解決", "如何解決", "解決", "修復", "排除", "處理"]):
         return "solution"
