@@ -122,41 +122,7 @@ def _detect_intent(user_message: str) -> str:
         return "calendar"
     if any(keyword in text for keyword in ["報案問題", "影響範圍"]):
         return "summary_problem"
-    if any(
-        keyword in text
-        for keyword in [
-            "流程",
-            "ci/cd",
-            "cicd",
-            "未來改進",
-            "未來 改進",
-            "未來改善",
-            "未來 改善",
-            "高風險",
-            "回滾",
-            "灰度",
-            "改進",
-            "改善",
-            "提升",
-            "預防",
-            "預防措施",
-            "防範",
-            "行動項目",
-            "行動計畫",
-            "最佳實務",
-            "最佳實踐",
-            "效率",
-            "優化",
-            "future",
-            "improve",
-            "improvement",
-            "prevention",
-            "action item",
-            "action items",
-            "隱藏危險",
-            "hidden risk",
-        ]
-    ):
+    if any(keyword in text for keyword in ["如何改進", "未來改進", "改善", "提升", "預防", "防範"]):
         return "future_improve"
     if any(keyword in text for keyword in ["怎麼解決", "如何解決", "解決", "修復", "排除", "處理"]):
         return "solution"
@@ -187,6 +153,7 @@ def _build_prompt(user_message: str, mode: str, history: str, rag_context: str) 
 
 
 def _build_future_prompt(user_message: str, history: str, rag_context: str) -> str:
+    return (
         "模式：未來改進（提出流程/治理/效率的改進建議，避免高風險變更）。\n"
         "建議步驟：\n"
         "1. 內部診斷: 先使用 Log/Code 工具查看系統內部的錯誤特徵或實作模式（例如搜尋 logs 找 warning/error, 或搜尋 code 找不當寫法）。\n"
@@ -203,10 +170,8 @@ def _build_future_prompt(user_message: str, history: str, rag_context: str) -> s
         "(請依序產出 3 個行動項目)\n\n"
         "2. 隱藏的危險 (Hidden Risks)\n"
         "根據 Log (warning) 或 Code (不正確寫法) 指出未來可能會有問題的地方。\n"
-        "格式："- [風險描述] (佐證: [檔案名稱 或 Log內容])"\n\n"
         "3. 優化方法 (Optimization)\n"
         "根據 Log (如重複操作) 或 Code (效率低下的寫法) 提出具體建議。\n"
-        "格式："- [優化建議] (佐證: [檔案名稱 或 Log內容])"\n"
         "\n歷史對話:\n"
         f"{history}\n"
         "\n參考資料:\n"
