@@ -1,8 +1,23 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { getCases } from '../api/cases'
 
-const cases = computed(() => getCases())
+const cases = ref([])
+const loading = ref(true)
+const error = ref('')
+
+const loadCases = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    cases.value = await getCases()
+  } catch (err) {
+    error.value = err?.message || 'Failed to load cases.'
+    cases.value = []
+  } finally {
+    loading.value = false
+  }
+}
 
 const totalCases = computed(() => cases.value.length)
 const severityCounts = computed(() => {
@@ -31,6 +46,8 @@ const topCategories = computed(() => {
 const maxCategoryCount = computed(() => {
   return Math.max(1, ...topCategories.value.map((item) => item.value))
 })
+
+onMounted(loadCases)
 </script>
 
 <template>
@@ -39,7 +56,16 @@ const maxCategoryCount = computed(() => {
     <p>總覽事件數量與分布情況。</p>
   </section>
 
-  <section class="dashboard-grid">
+  <section v-if="loading" class="section">
+    <div class="section-title">Loading...</div>
+    <p>Fetching cases from backend.</p>
+  </section>
+  <section v-else-if="error" class="section">
+    <div class="section-title">Failed to load</div>
+    <p>{{ error }}</p>
+  </section>
+
+  <section v-else class="dashboard-grid">
     <div class="stat-card">
       <div class="stat-label">Total Cases</div>
       <div class="stat-value">{{ totalCases }}</div>
