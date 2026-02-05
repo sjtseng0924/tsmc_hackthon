@@ -49,7 +49,7 @@ def _build_agent(tools: list) -> agent_engines.LanggraphAgent:
         tools=tools,
         model_kwargs={
             "temperature": 0.2,
-            "max_output_tokens": 900,
+            "max_output_tokens": 2000,
             "top_p": 0.95,
         },
     )
@@ -168,7 +168,7 @@ def _build_solution_prompt(user_message: str, history: str, rag_context: str) ->
         "請使用繁體中文，保持專業、冷靜與條理。\n"
         "模式：solution（協助解決問題，可使用對話紀錄、log、code、結案報告工具）。\n"
         "請一次完成並輸出最終結果，只輸出兩段(回復不能為空非常重要)，不要輸出底下在括號內的字，格式請用\n"
-        "   Issue 發生細節描述: 根本原因(用一兩句話總結整個問題)\n事件時間軸(詳細寫出在每個開過的檔案中的推理，逐條列出什麼時間點發生甚麼)\n"
+        "   Issue 發生細節描述:\n 根本原因(用一兩句話總結整個問題)\n事件時間軸(詳細寫出在每個開過的檔案中的推理，逐條列出什麼時間點發生甚麼)\n"
         "   解決方案: (列出每個面向的問題以及解決方法)\n"
         "   並在每段中標示參考檔案名稱（例如：tNote_app_server_v1.log, INC-20230815-04）。\n"
         "避免重複查看相同來源；資料足夠就直接總結。\n"
