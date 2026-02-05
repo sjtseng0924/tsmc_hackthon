@@ -86,7 +86,6 @@ def init_models():
         propose_process_improvements,
         analyze_risk_mitigation,
         search_industry_standards,
-        # reference: log and code
         list_log_files,
         search_log_entries,
         list_code_files,
@@ -161,16 +160,16 @@ def _build_future_prompt(user_message: str, history: str, rag_context: str) -> s
         "3. 綜合建議: 結合內部現狀與外部標準，產出下列三部分報告。\n"
         "\n"
         "請嚴格依照以下格式輸出（注意：行動項目不要有截止日期）：\n\n"
-        "1. 行動項目 (Action Items)\n"
+        "1. 行動項目\n"
         "請列出 3 項最可行的預防措施，針對這次的錯誤。\n"
         "格式範例：\n"
         "行動項目 1: [標題]\n"
         "內容: [詳細說明，包含具體實施方式]\n"
         "負責人: [建議負責團隊，如 Infra Team, SRE Team, DevOps Team]\n"
         "(請依序產出 3 個行動項目)\n\n"
-        "2. 隱藏的危險 (Hidden Risks)\n"
+        "2. 隱藏的危險\n"
         "根據 Log (warning) 或 Code (不正確寫法) 指出未來可能會有問題的地方。\n"
-        "3. 優化方法 (Optimization)\n"
+        "3. 優化方法\n"
         "根據 Log (如重複操作) 或 Code (效率低下的寫法) 提出具體建議。\n"
         "\n歷史對話:\n"
         f"{history}\n"
@@ -230,15 +229,15 @@ def _build_summary_all_prompt(user_message: str, history: str, rag_context: str)
         "資料影響:\n\n"
         "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
         "4. Issue 發生細節描述\n\n"
-        "根本原因 (Root Cause):\n"
+        "根本原因:\n"
         "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
         "事件細節:\n\n"
         "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
         "事件時間軸:\n\n"
         "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
-        "5. 解決方案 (Immediate Fix)\n\n"
+        "5. 解決方案\n\n"
         "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
-        "6. 之後如何避免 (Prevention Measures)\n\n"
+        "6. 之後如何避免\n\n"
         "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
         "注意：優先使用對話紀錄中的既有內容；只有缺少時才補寫。\n"
         "\n歷史對話:\n"
