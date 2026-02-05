@@ -13,6 +13,8 @@ except ImportError:
     GEMINI_AVAILABLE = False
 
 from app.config import settings
+from app.services import assistant_tools
+from app.services.message_service import save_message
 
 class DiscordServiceError(Exception):
     pass
@@ -72,6 +74,8 @@ class DiscordService:
         self._token = _get_token()
         self._client: Optional[discord.Client] = None
         self._task: Optional[asyncio.Task] = None
+        self._history: dict[int, list[dict]] = {}
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     @property
     def client(self) -> Optional[discord.Client]:
@@ -88,6 +92,7 @@ class DiscordService:
         intents = discord.Intents.default()
         intents.message_content = True
         client = _build_discord_client(intents)
+        self._loop = asyncio.get_running_loop()
 
         @client.event
         async def on_ready() -> None:
@@ -114,21 +119,30 @@ class DiscordService:
                 return
 
             try:
-                # TODO: 接上 RAG/工具時，填入 rag_context
-                result = await asyncio.to_thread(
-                    run_agent,
-                    user_message=prompt,
-                    rag_context="",
+                channel_id = message.channel.id
+                assistant_tools.set_progress_sender(
+                    _make_progress_sender(self, channel_id, self._loop)
+                )
+                self._append_history(channel_id, "user", prompt)
+                save_message(
+                    external_id=str(message.id),
+                    timestamp=message.created_at,
+                    user=str(message.author),
+                    role="user",
+                    content=prompt,
                 )
 
-                reply = result.get("message") if isinstance(result, dict) else str(result)
-                if not reply:
-                    await message.channel.send("模型回覆為空，請再試一次或換個說法。")
-                    return
-                await message.channel.send(reply)
+                await self._dispatch_agent_reply(
+                    channel_id=channel_id,
+                    user_prompt=prompt,
+                    client=client,
+                    channel=message.channel,
+                )
             except Exception:
                 self._logger.exception("Gemini reply failed")
                 await message.channel.send("發生錯誤，請稍後再試。")
+            finally:
+                assistant_tools.set_progress_sender(None)
 
         self._client = client
         self._task = asyncio.create_task(
@@ -161,3 +175,142 @@ class DiscordService:
             raise DiscordInvalidChannel("Channel is not text-capable")
 
         return await channel.send(content)
+
+    async def _run_solution_loop(
+        self,
+        *,
+        channel_id: int,
+        user_prompt: str,
+        client: discord.Client,
+        channel: discord.abc.Messageable,
+    ) -> None:
+        result = await asyncio.to_thread(
+            run_agent,
+            user_message=user_prompt,
+            rag_context="",
+            conversation_history=self._get_history(channel_id),
+        )
+
+        if not isinstance(result, dict):
+            reply = str(result)
+            await self._send_reply(channel_id, client, channel, reply)
+            return
+
+        mode = result.get("mode")
+        structured = result.get("structured")
+        reply = result.get("message")
+
+        if mode == "solution" and isinstance(structured, dict):
+            reply_text = structured.get("reply", "")
+            if reply_text:
+                await self._send_reply(channel_id, client, channel, reply_text)
+                return
+
+        if not reply:
+            await channel.send("模型回覆為空，請再試一次或換個說法。")
+            return
+
+        await self._send_reply(channel_id, client, channel, reply)
+
+    async def _dispatch_agent_reply(
+        self,
+        *,
+        channel_id: int,
+        user_prompt: str,
+        client: discord.Client,
+        channel: discord.abc.Messageable,
+    ) -> None:
+        result = await asyncio.to_thread(
+            run_agent,
+            user_message=user_prompt,
+            rag_context="",
+            conversation_history=self._get_history(channel_id),
+        )
+
+        if not isinstance(result, dict):
+            await self._send_reply(channel_id, client, channel, str(result))
+            return
+
+        mode = result.get("mode")
+        reply = result.get("message") or ""
+
+        if mode == "solution":
+            await self._run_solution_loop(
+                channel_id=channel_id,
+                user_prompt=user_prompt,
+                client=client,
+                channel=channel,
+            )
+            return
+
+        if not reply:
+            await channel.send("模型回覆為空，請再試一次或換個說法。")
+            return
+
+        await self._send_reply(channel_id, client, channel, reply)
+
+    async def _send_reply(
+        self,
+        channel_id: int,
+        client: discord.Client,
+        channel: discord.abc.Messageable,
+        content: str,
+    ) -> None:
+        for chunk in _chunk_message(content):
+            bot_msg = await channel.send(chunk)
+            self._append_history(channel_id, "assistant", chunk)
+            save_message(
+                external_id=str(bot_msg.id),
+                timestamp=bot_msg.created_at,
+                user=str(client.user),
+                role="assistant",
+                content=chunk,
+            )
+
+    def _append_history(self, channel_id: int, role: str, content: str) -> None:
+        items = self._history.setdefault(channel_id, [])
+        items.append({"role": role, "content": content})
+        if len(items) > 30:
+            self._history[channel_id] = items[-30:]
+
+    def _get_history(self, channel_id: int) -> list[dict]:
+        return list(self._history.get(channel_id, []))
+
+
+
+
+def _chunk_message(content: str, limit: int = 1900) -> list[str]:
+    if not content:
+        return [""]
+    if len(content) <= limit:
+        return [content]
+    chunks = []
+    remaining = content
+    while len(remaining) > limit:
+        split_at = remaining.rfind("\n", 0, limit)
+        if split_at == -1:
+            split_at = limit
+        chunks.append(remaining[:split_at].rstrip())
+        remaining = remaining[split_at:].lstrip("\n")
+    if remaining:
+        chunks.append(remaining)
+    return chunks
+
+
+def _make_progress_sender(
+    service: "DiscordService",
+    channel_id: int,
+    loop: Optional[asyncio.AbstractEventLoop],
+):
+    def _send(message: str) -> None:
+        if not loop or not service:
+            return
+        try:
+            asyncio.run_coroutine_threadsafe(
+                service.send_message(channel_id, message),
+                loop,
+            )
+        except Exception:
+            return
+
+    return _send
