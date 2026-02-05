@@ -23,6 +23,7 @@ from app.tools.calendar import list_events, create_event, check_availability
 
 
 _summary_agent = None
+_summary_all_agent = None
 _solution_agent = None
 _calendar_agent = None
 _vertex_initialized = False
@@ -56,9 +57,10 @@ def _build_agent(tools: list) -> agent_engines.LanggraphAgent:
 
 
 def init_models():
-    global _summary_agent, _solution_agent, _calendar_agent
+    global _summary_agent, _summary_all_agent, _solution_agent, _calendar_agent
     if (
         _summary_agent is not None
+        and _summary_all_agent is not None
         and _solution_agent is not None
         and _calendar_agent is not None
     ):
@@ -67,6 +69,7 @@ def init_models():
     _init_vertex()
 
     summary_tools = []
+    summary_all_tools = []
 
     calendar_tools = [
         list_events,
@@ -88,12 +91,15 @@ def init_models():
     ]
 
     _summary_agent = _build_agent(summary_tools)
+    _summary_all_agent = _build_agent(summary_all_tools)
     _solution_agent = _build_agent(solution_tools)
     _calendar_agent = _build_agent(calendar_tools)
 
 
 def _detect_intent(user_message: str) -> str:
     text = (user_message or "").lower()
+    if any(keyword in text for keyword in ["結案報告", "事故結案", "post-mortem", "post mortem", "結案"]):
+        return "summary_all"
     if any(keyword in text for keyword in ["行程", "日曆", "行事曆", "會議", "邀請", "空檔", "有空", "可用時間"]):
         return "calendar"
     if any(keyword in text for keyword in ["報案問題", "影響範圍"]):
@@ -115,6 +121,8 @@ def _history_to_text(history: Optional[list[dict]]) -> str:
 
 
 def _build_prompt(user_message: str, mode: str, history: str, rag_context: str) -> str:
+    if mode == "summary_all":
+        return _build_summary_all_prompt(user_message, history, rag_context)
     if mode == "summary_problem":
         return _build_summary_prompt(user_message, history, rag_context)
     if mode == "calendar":
@@ -135,6 +143,48 @@ def _build_summary_prompt(user_message: str, history: str, rag_context: str) -> 
         "使用者影響: ...\n"
         "資料影響: ...\n"
         "注意：只能輸出以上兩個區段，不要加其他文字。\n"
+        "\n歷史對話:\n"
+        f"{history}\n"
+        "\n參考資料:\n"
+        f"{rag_context}\n"
+        "\n使用者輸入:\n"
+        f"{user_message}\n"
+    )
+
+
+def _build_summary_all_prompt(user_message: str, history: str, rag_context: str) -> str:
+    return (
+        "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
+        "請使用繁體中文，保持專業、冷靜與條理。\n"
+        "模式：summary_all（產出完整結案報告）。\n"
+        "請嚴格依照下列格式輸出，不要加多餘文字：\n\n"
+        "tNote 系統事故結案報告 (Post-Mortem Report)\n\n"
+        "文件編號: (若對話或資料有編號就使用，沒有請填未知)\n"
+        "報告日期: (若對話或資料有日期就使用，沒有請填未知)\n"
+        "事件標題: (若對話或資料有標題就使用，沒有請填未知)\n\n"
+        "1. 基本資訊\n\n"
+        "Issue 發生時間: (若對話或資料有時間就使用，沒有請填未知)\n\n"
+        "Issue 解決時間: (若對話或資料有時間就使用，沒有請填未知)\n\n"
+        "事件等級: (若對話或資料有等級就使用，沒有請填未知)\n\n"
+        "2. 報案問題\n\n"
+        "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
+        "3. 影響範圍\n\n"
+        "服務影響:\n\n"
+        "使用者影響:\n\n"
+        "資料影響:\n\n"
+        "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
+        "4. Issue 發生細節描述\n\n"
+        "根本原因 (Root Cause):\n"
+        "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
+        "事件細節:\n\n"
+        "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
+        "事件時間軸:\n\n"
+        "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
+        "5. 解決方案 (Immediate Fix)\n\n"
+        "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
+        "6. 之後如何避免 (Prevention Measures)\n\n"
+        "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
+        "注意：優先使用對話紀錄中的既有內容；只有缺少時才補寫。\n"
         "\n歷史對話:\n"
         f"{history}\n"
         "\n參考資料:\n"
@@ -194,6 +244,8 @@ def run_agent(
     summary_context = ""
     if resolved_mode == "summary_problem":
         summary_context = _build_summary_context(user_message)
+    if resolved_mode == "summary_all":
+        summary_context = _build_summary_all_context(user_message)
     prompt = _build_prompt(
         user_message,
         resolved_mode,
@@ -203,6 +255,8 @@ def run_agent(
 
     if resolved_mode == "summary_problem":
         agent = _summary_agent
+    elif resolved_mode == "summary_all":
+        agent = _summary_all_agent
     elif resolved_mode == "calendar":
         agent = _calendar_agent
     else:
@@ -272,7 +326,19 @@ def _build_summary_context(user_message: str) -> str:
     return "\n\n".join(p for p in parts if p)
 
 
+def _build_summary_all_context(user_message: str) -> str:
+    parts = [list_recent_discord_messages(limit=40)]
+    if user_message and len(user_message.strip()) >= 2:
+        parts.append(search_discord_messages(user_message, limit=40))
+    return "\n\n".join(p for p in parts if p)
+
+
 def _fallback_message(mode: str) -> str:
+    if mode == "summary_all":
+        return (
+            "目前沒有足夠的對話紀錄可以產出結案報告。\n"
+            "請提供更多討論內容或貼上關鍵段落。"
+        )
     if mode == "summary_problem":
         return (
             "目前沒有足夠的對話紀錄可以統整。\n"
