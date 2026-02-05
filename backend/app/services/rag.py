@@ -26,12 +26,12 @@ def retrieve_knowledge(query: str, limit: int = 3) -> str:
         limit: 回傳幾筆資料 (預設 3)
     """
     try:
-        # 1. 把問題轉成向量
+        # convert query to vector
         query_vector = get_embedding(query)
         
         db = SessionLocal()
         try:
-            # 2. 用向量算距離 (L2 Distance)，找最近的鄰居
+            # using l2_distance for pgvector similarity search
             results = db.query(Knowledge)\
                 .order_by(Knowledge.vector.l2_distance(query_vector))\
                 .limit(limit)\

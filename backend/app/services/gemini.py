@@ -14,9 +14,12 @@ from app.services.assistant_tools import (
     list_code_files,
     list_log_files,
     list_recent_discord_messages,
+    analyze_risk_mitigation,
+    propose_process_improvements,
     search_code_snippets,
     search_discord_messages,
     search_log_entries,
+    search_industry_standards,
 )
 from app.services.rag import retrieve_knowledge
 from app.tools.calendar import list_events, create_event, check_availability
@@ -25,6 +28,7 @@ from app.tools.calendar import list_events, create_event, check_availability
 _summary_agent = None
 _summary_all_agent = None
 _solution_agent = None
+_future_agent = None
 _calendar_agent = None
 _vertex_initialized = False
 
@@ -57,11 +61,12 @@ def _build_agent(tools: list) -> agent_engines.LanggraphAgent:
 
 
 def init_models():
-    global _summary_agent, _summary_all_agent, _solution_agent, _calendar_agent
+    global _summary_agent, _summary_all_agent, _solution_agent, _future_agent, _calendar_agent
     if (
         _summary_agent is not None
         and _summary_all_agent is not None
         and _solution_agent is not None
+        and _future_agent is not None
         and _calendar_agent is not None
     ):
         return
@@ -75,6 +80,18 @@ def init_models():
         list_events,
         create_event,
         check_availability,
+    ]
+
+    future_tools = [
+        propose_process_improvements,
+        analyze_risk_mitigation,
+        search_industry_standards,
+        # reference: log and code
+        list_log_files,
+        search_log_entries,
+        list_code_files,
+        search_code_snippets,
+        get_code_file,
     ]
 
     solution_tools = [
@@ -94,6 +111,7 @@ def init_models():
     _summary_all_agent = _build_agent(summary_all_tools)
     _solution_agent = _build_agent(solution_tools)
     _calendar_agent = _build_agent(calendar_tools)
+    _future_agent = _build_agent(future_tools)
 
 
 def _detect_intent(user_message: str) -> str:
@@ -104,6 +122,42 @@ def _detect_intent(user_message: str) -> str:
         return "calendar"
     if any(keyword in text for keyword in ["報案問題", "影響範圍"]):
         return "summary_problem"
+    if any(
+        keyword in text
+        for keyword in [
+            "流程",
+            "ci/cd",
+            "cicd",
+            "未來改進",
+            "未來 改進",
+            "未來改善",
+            "未來 改善",
+            "高風險",
+            "回滾",
+            "灰度",
+            "改進",
+            "改善",
+            "提升",
+            "預防",
+            "預防措施",
+            "防範",
+            "行動項目",
+            "行動計畫",
+            "最佳實務",
+            "最佳實踐",
+            "效率",
+            "優化",
+            "future",
+            "improve",
+            "improvement",
+            "prevention",
+            "action item",
+            "action items",
+            "隱藏危險",
+            "hidden risk",
+        ]
+    ):
+        return "future_improve"
     if any(keyword in text for keyword in ["怎麼解決", "如何解決", "解決", "修復", "排除", "處理"]):
         return "solution"
     return "solution"
@@ -127,7 +181,39 @@ def _build_prompt(user_message: str, mode: str, history: str, rag_context: str) 
         return _build_summary_prompt(user_message, history, rag_context)
     if mode == "calendar":
         return _build_calendar_prompt(user_message, history, rag_context)
+    if mode == "future_improve":
+        return _build_future_prompt(user_message, history, rag_context)
     return _build_solution_prompt(user_message, history, rag_context)
+
+
+def _build_future_prompt(user_message: str, history: str, rag_context: str) -> str:
+        "模式：未來改進（提出流程/治理/效率的改進建議，避免高風險變更）。\n"
+        "建議步驟：\n"
+        "1. 內部診斷: 先使用 Log/Code 工具查看系統內部的錯誤特徵或實作模式（例如搜尋 logs 找 warning/error, 或搜尋 code 找不當寫法）。\n"
+        "2. 外部對標: 再用 Google Search 工具查詢該問題的業界標準/CI-CD/安全規範。\n"
+        "3. 綜合建議: 結合內部現狀與外部標準，產出下列三部分報告。\n"
+        "\n"
+        "請嚴格依照以下格式輸出（注意：行動項目不要有截止日期）：\n\n"
+        "1. 行動項目 (Action Items)\n"
+        "請列出 3 項最可行的預防措施，針對這次的錯誤。\n"
+        "格式範例：\n"
+        "行動項目 1: [標題]\n"
+        "內容: [詳細說明，包含具體實施方式]\n"
+        "負責人: [建議負責團隊，如 Infra Team, SRE Team, DevOps Team]\n"
+        "(請依序產出 3 個行動項目)\n\n"
+        "2. 隱藏的危險 (Hidden Risks)\n"
+        "根據 Log (warning) 或 Code (不正確寫法) 指出未來可能會有問題的地方。\n"
+        "格式："- [風險描述] (佐證: [檔案名稱 或 Log內容])"\n\n"
+        "3. 優化方法 (Optimization)\n"
+        "根據 Log (如重複操作) 或 Code (效率低下的寫法) 提出具體建議。\n"
+        "格式："- [優化建議] (佐證: [檔案名稱 或 Log內容])"\n"
+        "\n歷史對話:\n"
+        f"{history}\n"
+        "\n參考資料:\n"
+        f"{rag_context}\n"
+        "\n使用者輸入:\n"
+        f"{user_message}\n"
+    )
 
 
 def _build_summary_prompt(user_message: str, history: str, rag_context: str) -> str:
@@ -264,6 +350,8 @@ def run_agent(
         agent = _summary_all_agent
     elif resolved_mode == "calendar":
         agent = _calendar_agent
+    elif resolved_mode == "future_improve":
+        agent = _future_agent
     else:
         agent = _solution_agent
     response = agent.query(input={"messages": [("user", prompt)]})
@@ -351,4 +439,6 @@ def _fallback_message(mode: str) -> str:
         )
     if mode == "calendar":
         return "目前無法取得日曆資訊，請再描述具體需求。"
+    if mode == "future_improve":
+        return "目前無法產生改進建議，請提供更多情境或既有問題描述。"
     return "目前無法取得回覆內容，請再試一次。"
