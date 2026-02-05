@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DISCORD_WEBHOOK_URL: Optional[str] = None
     DISCORD_BOT_ID: Optional[int] = None
     DISCORD_BOT_NAME: Optional[str] = None
+    DISCORD_CHANNEL_ID: Optional[int] = None
     PORT: int = 8000
     
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
