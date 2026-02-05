@@ -1,7 +1,10 @@
+from datetime import datetime
 from typing import Optional
 
 from app.database import SessionLocal
 from app.models import Knowledge
+from app.services.case_parser import parse_case_text
+from app.services.rag import get_embedding
 
 
 def _row_to_item(row: Knowledge) -> dict:
@@ -92,3 +95,58 @@ def list_taxonomy(items: list[dict]) -> dict:
 
 def list_case_ids(items: list[dict]) -> list[str]:
     return [item.get("id", "") for item in items if item.get("id")]
+
+
+def save_case_report(report_text: str, *, source: Optional[str] = None) -> Optional[str]:
+    if not report_text or not report_text.strip():
+        return None
+    parsed = parse_case_text(report_text)
+    case_id = parsed.get("case_id") or "unknown"
+    filename = f"{case_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.txt"
+    references = list(parsed.get("references") or [])
+    if source:
+        references.append(source)
+
+    db = SessionLocal()
+    try:
+        row = db.query(Knowledge).filter(Knowledge.case_id == case_id).first()
+        vector = get_embedding(report_text)
+        if row:
+            row.filename = row.filename or filename
+            row.content = report_text
+            row.vector = vector
+            row.title = parsed.get("title")
+            row.category = parsed.get("category")
+            row.severity = parsed.get("severity")
+            row.summary = parsed.get("summary")
+            row.root_cause = parsed.get("root_cause")
+            row.timeline = parsed.get("timeline")
+            row.immediate_fix = parsed.get("immediate_fix")
+            row.long_term_fix = parsed.get("long_term_fix")
+            row.tags = parsed.get("tags")
+            row.references = references
+        else:
+            row = Knowledge(
+                filename=filename,
+                content=report_text,
+                vector=vector,
+                case_id=case_id,
+                title=parsed.get("title"),
+                category=parsed.get("category"),
+                severity=parsed.get("severity"),
+                summary=parsed.get("summary"),
+                root_cause=parsed.get("root_cause"),
+                timeline=parsed.get("timeline"),
+                immediate_fix=parsed.get("immediate_fix"),
+                long_term_fix=parsed.get("long_term_fix"),
+                tags=parsed.get("tags"),
+                references=references,
+            )
+            db.add(row)
+        db.commit()
+        return case_id
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()

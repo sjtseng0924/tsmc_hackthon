@@ -15,6 +15,7 @@ except ImportError:
 from app.config import settings
 from app.services import assistant_tools
 from app.services.message_service import save_message
+from app.services.cases_service import save_case_report
 
 class DiscordServiceError(Exception):
     pass
@@ -250,6 +251,11 @@ class DiscordService:
             return
 
         await self._send_reply(channel_id, client, channel, reply)
+        if mode == "summary_all":
+            try:
+                save_case_report(reply, source="discord_summary_all")
+            except Exception:
+                self._logger.exception("Failed to save summary_all report")
 
     async def _send_reply(
         self,

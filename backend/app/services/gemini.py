@@ -50,7 +50,7 @@ def _build_agent(tools: list) -> agent_engines.LanggraphAgent:
         tools=tools,
         model_kwargs={
             "temperature": 0.2,
-            "max_output_tokens": 2000,
+            "max_output_tokens": 4096,
             "top_p": 0.95,
         },
     )
