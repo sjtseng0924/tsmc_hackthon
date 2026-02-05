@@ -14,8 +14,6 @@ from app.services.assistant_tools import (
     list_code_files,
     list_log_files,
     list_recent_discord_messages,
-    analyze_risk_mitigation,
-    propose_process_improvements,
     search_code_snippets,
     search_discord_messages,
     search_log_entries,
@@ -83,8 +81,6 @@ def init_models():
     ]
 
     future_tools = [
-        propose_process_improvements,
-        analyze_risk_mitigation,
         search_industry_standards,
         list_log_files,
         search_log_entries,
@@ -121,7 +117,7 @@ def _detect_intent(user_message: str) -> str:
         return "calendar"
     if any(keyword in text for keyword in ["報案問題", "影響範圍"]):
         return "summary_problem"
-    if any(keyword in text for keyword in ["如何改進", "未來改進", "改善", "提升", "預防", "防範"]):
+    if any(keyword in text for keyword in ["如何改進", "未來改進", "改善", "提升", "預防", "防範", "改進"]):
         return "future_improve"
     if any(keyword in text for keyword in ["怎麼解決", "如何解決", "解決", "修復", "排除", "處理"]):
         return "solution"
@@ -153,22 +149,22 @@ def _build_prompt(user_message: str, mode: str, history: str, rag_context: str) 
 
 def _build_future_prompt(user_message: str, history: str, rag_context: str) -> str:
     return (
-        "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
-        "請使用繁體中文，保持專業、冷靜與條理。\n"
-        "模式：未來改進（參考外部程式碼，提出改善的建議）\n"
-        "1. 請先使用 Log/Code 工具查看系統內部錯誤或者能改善的實作\n"
-        "2. 再用 Google Search 工具查詢該問題的業界標準/CI-CD/安全規範。\n"
-        "請嚴格依照下列格式輸出，不要加多餘文字，括號中的文字不要輸出：\n\n"
-        "之後如何避免\n"
-        "- 未來預防措施\n"
-        "請根據以下格式列出 3 項可以預防之後同樣錯誤再發生的方法\n"
-        "預防措施 1:(標題)\n"
-        "內容: (詳細說明，包含具體實施方式)\n"
-        "負責人: [建議負責團隊，如 Infra Team, SRE Team, DevOps Team]\n"
-        "- 隱藏的危險\n"
-        "根據 Log (warning) 或 Code (不正確寫法) 列出未來可能會有問題的地方。\n"
-        "- 優化方法\n"
-        "根據 Log (如重複操作) 或 Code (效率低下的寫法) 列出具體建議\n"
+        "模式：未來改進（提出流程/治理/效率的改進建議，避免高風險變更）。\n"
+        "建議先使用 Log/Code 工具查看系統內部的錯誤特徵或實作模式（例如搜尋 logs 找 warning/error, 或搜尋 code 找不當寫法）\n"
+        "再用 Google Search 工具查詢該問題的業界標準/改進方案 (improvements)，若在項目中有提及，可選擇在格式中多一項 參考連結：[外部網址]\n"
+        "最後結合內部現狀與外部標準。\n"
+        "請嚴格依照以下純文字的形式輸出，並且不要有格式限制以外的文字輸出\n\n"
+        "未來預防措施[請列出最可行的預防措施 (不超過5項)，針對這次的錯誤。]\n"
+        "格式範例：\n"
+        "預防措施 1: [標題]\n\n"
+        "內容: [清楚的提出完整的實施方法]\n"
+        "負責人: [建議負責團隊，如 Infra Team, SRE Team, DevOps Team, Security Team, DBA Team 等]\n\n"
+        "(請依序產出多個預防措施)\n\n"
+        "其他隱藏的危險及優化方法\n"
+        "[此項為可選，若無相關內容請省略] 請根據 Log (如重複操作、Warning) 或 Code (效率低下的寫法、錯誤用法) 提出具體的潛在風險預警與優化建議。\n"
+        "參考的外部連結[可能多個，若無相關內容請省略]\n"
+        "連結一網址\n"
+        "連結二網址\n"
         "\n歷史對話:\n"
         f"{history}\n"
         "\n參考資料:\n"

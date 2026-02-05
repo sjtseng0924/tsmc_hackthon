@@ -16,9 +16,6 @@ class Settings(BaseSettings):
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     VERTEX_PROJECT: Optional[str] = None
     VERTEX_LOCATION: Optional[str] = "us-central1"
-    GOOGLE_SEARCH_API_KEY: Optional[str] = None
-    GOOGLE_SEARCH_CX: Optional[str] = None
-    GOOGLE_SEARCH_CREDENTIALS_PATH: Optional[str] = "search_credentials.json"
     
     # n8n Integration
     N8N_CALENDAR_WEBHOOK_URL: Optional[str] = None
