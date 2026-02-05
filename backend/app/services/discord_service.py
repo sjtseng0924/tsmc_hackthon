@@ -104,9 +104,19 @@ class DiscordService:
                 return
             if client.user is None:
                 return
-            if client.user not in message.mentions:
-                return
             if not message.content:
+                return
+
+            # Persist all user messages, regardless of mention.
+            save_message(
+                external_id=str(message.id),
+                timestamp=message.created_at,
+                user=str(message.author),
+                role="user",
+                content=message.content,
+            )
+
+            if client.user not in message.mentions:
                 return
 
             prompt = _strip_bot_mention(message, client.user)
@@ -124,14 +134,6 @@ class DiscordService:
                     _make_progress_sender(self, channel_id, self._loop)
                 )
                 self._append_history(channel_id, "user", prompt)
-                save_message(
-                    external_id=str(message.id),
-                    timestamp=message.created_at,
-                    user=str(message.author),
-                    role="user",
-                    content=prompt,
-                )
-
                 await self._dispatch_agent_reply(
                     channel_id=channel_id,
                     user_prompt=prompt,
