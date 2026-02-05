@@ -107,6 +107,12 @@ class DiscordService:
                 return
             if not message.content:
                 return
+            target_channel_id = settings.DISCORD_CHANNEL_ID
+            if target_channel_id:
+                channel_id = message.channel.id
+                parent_id = getattr(message.channel, "parent_id", None)
+                if channel_id != target_channel_id and parent_id != target_channel_id:
+                    return
 
             # Persist all user messages, regardless of mention.
             save_message(
