@@ -334,6 +334,7 @@ def _build_summary_all_prompt(user_message: str, history: str, rag_context: str)
     return (
         "**執行步驟 (務必遵守)**：\n"
         "1. **生成回應**：請先根據整理好的資訊，**務必**將完整的 Markdown 報告內容輸出給使用者看。\n"
+        f"   在結尾要提供 案件網址: {case_url_template}\n"
         "   請嚴格依照下列格式輸出，不要加多餘文字，從對話紀錄找到相關內容務並內容都整理輸出，除了數字以外的分點都用點來表示，縮排務必整齊\n\n"
         "        \"tNote 系統事故結案報告 (Post-Mortem Report)\\n\\n\"\n"
         "        \"文件編號: (請依使用者@bot請求結案報告的日期與時間命名為 INC-YYYYMMDD-HHMM)\\n\"\n"
@@ -398,8 +399,6 @@ def _build_summary_all_prompt(user_message: str, history: str, rag_context: str)
         "   - `solution`: 對應「解決方案」\n"
         "   - `preventive_measures`: 將「未來預防措施」轉為 List of Dict (必須包含 `title`, `content`, `owner`, `link`)\n"
         "   - `hidden_risks`: 將「隱藏的危險及優化方法」轉為 List of Dict (必須包含 `title`, `content`, `link`)\n\n"
-        "3. **產生案件網址**：在完成 `submit_incident_report` 後，**必須** 傳送案件網址，並在最末尾**單獨一行**輸出。\n"
-        f"     案件網址: {case_url_template}\n\n"
         "請務必回覆內容，不要省略任何區塊。\n"
         "存入資料庫時請將上述內容轉為對應的參數格式。\n"
         "\n歷史對話:\n"
