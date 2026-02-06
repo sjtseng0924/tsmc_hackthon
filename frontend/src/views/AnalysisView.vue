@@ -3,6 +3,7 @@ import { computed, onMounted, ref, provide } from 'vue'
 import { getCases } from '../api/cases'
 import CaseCard from '../components/CaseCard.vue'
 
+
 // ECHARTS IMPORTS
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -154,6 +155,8 @@ const pieOption = computed(() => {
       
     </section>
 
+
+
     <!-- Bottom Section: Split Layout -->
     <section class="content-split">
       
@@ -238,6 +241,11 @@ const pieOption = computed(() => {
   height: 400px; /* Fixed height for charts */
   display: flex;
   flex-direction: column;
+}
+
+.viz-card.full-width {
+  height: auto;
+  min-height: 500px;
 }
 
 .card-title {

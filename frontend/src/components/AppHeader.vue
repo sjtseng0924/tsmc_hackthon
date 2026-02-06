@@ -8,6 +8,7 @@
     </div>
     <nav class="app-nav">
       <RouterLink to="/analysis">Analysis</RouterLink>
+      <RouterLink to="/knowledge-graph">Knowledge Graph</RouterLink>
     </nav>
   </header>
 </template>

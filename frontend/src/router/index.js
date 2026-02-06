@@ -12,6 +12,11 @@ const routes = [
     component: () => import('../views/AnalysisView.vue'),
   },
   {
+    path: '/knowledge-graph',
+    name: 'knowledge-graph',
+    component: () => import('../views/KnowledgeGraphView.vue'),
+  },
+  {
     path: '/cases/:id',
     name: 'case-detail',
     component: CaseDetailView,
