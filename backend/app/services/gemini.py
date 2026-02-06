@@ -1,6 +1,7 @@
 # gemini.py
 import os
 import json
+import math
 from typing import Optional
 
 import vertexai
@@ -20,7 +21,7 @@ from app.services.assistant_tools import (
     search_industry_standards,
     submit_incident_report
 )
-from app.services.rag import retrieve_knowledge
+from app.services.rag import retrieve_knowledge, get_embedding
 from app.tools.calendar import list_events, create_event, check_availability, find_available_slots
 from app.tools.discord import add_user_to_channel, search_users_with_discord
 
@@ -59,7 +60,6 @@ def _build_agent(tools):
     return agent_engines.LanggraphAgent(
         model=settings.AGENT_MODEL,
         tools=tools,
-        system_instruction=SYSTEM_INSTRUCTION,
         model_kwargs={
             "temperature": 0.2,
             "max_output_tokens": 20000,
@@ -139,7 +139,87 @@ def _detect_intent(user_message: str) -> str:
         return "future_improve"
     if any(keyword in text for keyword in ["怎麼解決", "如何解決", "解決", "修復", "排除", "處理"]):
         return "solution"
-    return "solution"
+    semantic_mode = _semantic_intent_fallback(text)
+    if semantic_mode:
+        return semantic_mode
+    return "unknown"
+
+
+def _semantic_intent_fallback(text: str) -> Optional[str]:
+    cleaned = (text or "").strip()
+    if len(cleaned) < 2:
+        return None
+
+    # Representative phrases per intent for semantic matching
+    intent_examples = {
+        "summary_all": [
+            "請產出事故結案報告",
+            "需要完整的 post-mortem",
+            "整理這次事故的結案文件",
+            "輸出完整結案報告",
+            "生成結案報告草稿",
+        ],
+        "calendar": [
+            "幫我安排會議",
+            "幫我看一下這週的空檔",
+            "幫我查日曆有沒有空",
+            "把人加進 Discord 頻道",
+            "幫我約檢討會",
+        ],
+        "summary_problem": [
+            "請統整報案問題與影響範圍",
+            "幫我摘要目前問題描述",
+            "整理出報案問題",
+            "整理影響範圍",
+            "歸納使用者描述的問題",
+        ],
+        "future_improve": [
+            "提出未來改進建議",
+            "怎麼預防再次發生",
+            "提供改善與預防措施",
+            "提出後續優化方向",
+            "建議可行的改進方法",
+        ],
+        "solution": [
+            "請協助解決這個問題",
+            "給我修復建議",
+            "幫我找出根因並提出解法",
+            "針對問題給出處理方法",
+            "如何排除這個錯誤",
+        ],
+    }
+
+    try:
+        query_vec = get_embedding(cleaned)
+    except Exception:
+        return None
+
+    def _cosine_similarity(a: list[float], b: list[float]) -> float:
+        if not a or not b or len(a) != len(b):
+            return 0.0
+        dot = sum(x * y for x, y in zip(a, b))
+        norm_a = math.sqrt(sum(x * x for x in a))
+        norm_b = math.sqrt(sum(y * y for y in b))
+        if norm_a == 0.0 or norm_b == 0.0:
+            return 0.0
+        return dot / (norm_a * norm_b)
+
+    best_intent = None
+    best_score = 0.0
+    for intent, examples in intent_examples.items():
+        for example in examples:
+            try:
+                example_vec = get_embedding(example)
+            except Exception:
+                continue
+            score = _cosine_similarity(query_vec, example_vec)
+            if score > best_score:
+                best_score = score
+                best_intent = intent
+
+    if best_score < 0.5:
+        return None
+    return best_intent
 
 
 def _history_to_text(history: Optional[list[dict]]) -> str:
@@ -370,6 +450,20 @@ def run_agent(
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     resolved_mode = mode or _detect_intent(user_message)
+    if resolved_mode == "unknown":
+        return {
+            "message": (
+                "我不太確定你要的模式。你可以用更明確的指令：\n"
+                "- 結案報告: 「請產出結案報告 / post-mortem」\n"
+                "- 日曆/Discord: 「幫我安排會議 / 查空檔 / 把人加進頻道」\n"
+                "- 報案問題: 「統整報案問題與影響範圍」\n"
+                "- 未來改進: 「如何改進 / 預防措施」\n"
+                "- 解決方案: 「如何解決 / 排除 / 修復」"
+            ),
+            "structured": None,
+            "mode": resolved_mode,
+            "confidence": 0.0,
+        }
     history_text = _history_to_text(conversation_history)
     summary_context = ""
     if resolved_mode == "summary_problem":
@@ -383,6 +477,7 @@ def run_agent(
         rag_context or summary_context,
         channel_id=channel_id,
     )
+    prompt = f"{SYSTEM_INSTRUCTION}\n\n{prompt}"
 
     if resolved_mode == "summary_problem":
         agent = _summary_agent
