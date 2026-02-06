@@ -67,10 +67,18 @@ def _init_vertex():
 
 
 def _build_agent(tools):
+    logger.info(
+        "Initializing agent model=%s project=%s location=%s",
+        settings.AGENT_MODEL,
+        settings.VERTEX_PROJECT,
+        settings.VERTEX_AGENT_LOCATION,
+    )
     return agent_engines.LanggraphAgent(
         model=settings.AGENT_MODEL,
         tools=tools,
         model_kwargs={
+            "project": settings.VERTEX_PROJECT,
+            "location": settings.VERTEX_AGENT_LOCATION,
             "temperature": 0.2,
             "max_output_tokens": 20000,
             "top_p": 0.95,
@@ -304,7 +312,7 @@ def _build_summary_all_prompt(user_message: str, history: str, rag_context: str)
         "**執行步驟 (務必遵守)**：\n"
         "1. **生成回應**：請先根據整理好的資訊，**務必**將完整的 Markdown 報告內容輸出給使用者看。\n"
         f"   在結尾要提供 案件網址: {case_url_template}\n"
-        "   請嚴格依照下列格式輸出，不要加多餘文字，從對話紀錄找到相關內容務並內容都整理輸出，除了數字以外的分點都用點來表示，縮排務必整齊\n\n"
+        "   請嚴格依照下列格式輸出，不要用雙引號包住，不要加多餘文字，從對話紀錄找到相關內容務並內容都整理輸出，除了數字以外的分點都用點來表示，縮排務必整齊\n\n"
         "        \"tNote 系統事故結案報告 (Post-Mortem Report)\\n\\n\"\n"
         "        \"文件編號: (請依使用者@bot請求結案報告的日期與時間命名為 INC-YYYYMMDD-HHMM)\\n\"\n"
         "        \"報告日期: (若對話或資料有日期就使用，沒有請填未知)\\n\"\n"
