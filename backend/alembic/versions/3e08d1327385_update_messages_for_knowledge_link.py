@@ -26,7 +26,6 @@ def upgrade() -> None:
     op.add_column('messages', sa.Column('user', sa.String(), nullable=True))
     op.add_column('messages', sa.Column('role', sa.String(), nullable=True))
     op.create_index(op.f('ix_messages_knowledge_id'), 'messages', ['knowledge_id'], unique=False)
-    op.drop_constraint(op.f('messages_channel_id_fkey'), 'messages', type_='foreignkey')
     op.create_foreign_key(None, 'messages', 'knowledge', ['knowledge_id'], ['id'])
     op.drop_column('messages', 'channel_id')
     op.drop_index(op.f('ix_message_channels_id'), table_name='message_channels')

@@ -35,10 +35,12 @@ def _init_vertex():
     global _vertex_initialized
     if _vertex_initialized:
         return
+
+    # 設置認證
     creds_path = settings.GOOGLE_APPLICATION_CREDENTIALS
     if creds_path:
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
-
+    
     vertexai.init(
         project=settings.VERTEX_PROJECT,
         location=settings.VERTEX_AGENT_LOCATION,
@@ -46,13 +48,13 @@ def _init_vertex():
     _vertex_initialized = True
 
 
-def _build_agent(tools: list) -> agent_engines.LanggraphAgent:
+def _build_agent(tools):
     return agent_engines.LanggraphAgent(
         model=settings.AGENT_MODEL,
         tools=tools,
         model_kwargs={
             "temperature": 0.2,
-            "max_output_tokens": 4096,
+            "max_output_tokens": 2048,
             "top_p": 0.95,
         },
     )
@@ -244,14 +246,29 @@ def _build_summary_all_prompt(user_message: str, history: str, rag_context: str)
 
 
 def _build_calendar_prompt(user_message: str, history: str, rag_context: str) -> str:
+    import datetime
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
     return (
         "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
         "請使用繁體中文，保持專業、冷靜與條理。\n"
-        "模式：calendar（查詢/安排日曆，只能使用日曆相關工具）。\n"
-        "請用簡短條列回覆，格式如下：\n"
-        "- 需求: (使用者要做的日曆需求)\n"
-        "- 行動: (你要查詢/建立/檢查的項目)\n"
-        "- 結果: (查詢到的結果或建立成功的摘要)\n"
+        "模式：calendar（查詢/安排日曆）。\n"
+        f"現在時間是：{now_str} (請以此時間為基準推斷「現在」、「這週」等相對日期)\n\n"
+        "**日曆助手進階策略：**\n\n"
+        "1. **緊急找人 (Mobilize)**：\n"
+        "   - 當使用者問「Ivan 在嗎？」、「Ivan 有空嗎？」或「拉 Ivan 進來」，**預設時間為 現在 (Now)** 至 30 分鐘後。\n"
+        "   - 使用 `check_availability` 工具。若不知道 Email，直接使用人名 (如 'Ivan')，系統會自動嘗試查詢。\n"
+        "   - 回覆時請明確告知對方狀態。例如：「Ivan 目前是忙碌狀態 (會議中)，但他將在 10:00 結束。」\n\n"
+        "2. **建立 War Room (Emergency Sync)**：\n"
+        "   - 當聽到「緊急會議」、「War Room」或「線上同步」：\n"
+        "     - **summary**: 必須加上 `[Emergency]` 前綴 (例如: `[Emergency] tNote DB Outage War Room`)。\n"
+        "     - **description**: 請將目前的對話摘要放入描述中，讓與會者知道發生什麼事。\n"
+        "     - **is_allday**: False。\n"
+        "     - **attendees**: 自動加入對話中提到的所有相關人員。\n\n"
+        "3. **事後檢討 (Post-Mortem)**：\n"
+        "   - 當使用者要求「約檢討會」或「Post-Mortem」：\n"
+        "     - 先呼叫 `check_availability` 檢查關鍵人員空檔。\n"
+        "     - 根據回傳的忙碌時段，**主動推薦**一個大家都有空的時間 (例如「明天下午 14:00 - 15:00 大家都有空」)。\n"
         "\n歷史對話:\n"
         f"{history}\n"
         "\n參考資料:\n"
@@ -289,6 +306,9 @@ def run_agent(
     mode: Optional[str] = None,
 ) -> dict:
     init_models()
+
+    import datetime
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     resolved_mode = mode or _detect_intent(user_message)
     history_text = _history_to_text(conversation_history)
@@ -330,6 +350,11 @@ def run_agent(
     if isinstance(response, dict) and "messages" in response:
         for msg in reversed(response["messages"]):
             msg_type = msg.get("kwargs", {}).get("type")
+            
+            # Log usage of tools if any
+            if "tool_calls" in msg.get("kwargs", {}):
+                print(f"DEBUG: Tool Calls detected: {msg.get('kwargs', {})['tool_calls']}")
+
             if msg_type == "ai":
                 content = msg.get("kwargs", {}).get("content", "")
                 if not content:

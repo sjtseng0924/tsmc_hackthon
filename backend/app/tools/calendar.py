@@ -29,6 +29,36 @@ def _call_n8n(action: str, payload: dict) -> str:
         # Try to parse JSON response if possible, else return text
         try:
             data = response.json()
+            
+            # Helper to simplify event object
+            def simplify_event(evt):
+                if not isinstance(evt, dict):
+                    return evt
+                return {
+                    "summary": evt.get("summary", "No Title"),
+                    "start": evt.get("start"),
+                    "end": evt.get("end"),
+                    "location": evt.get("location"),
+                    "description": evt.get("description", "")[:100] + "..." if evt.get("description") else None,
+                    "attendees": [a.get("email") for a in evt.get("attendees", []) if isinstance(a, dict) and "email" in a],
+                    "status": evt.get("status")
+                }
+
+            # Handle list_events response specifically
+            if action == "list_events":
+                items = []
+                if isinstance(data, dict):
+                    if "data" in data and isinstance(data["data"], list):
+                        items = data["data"]
+                    elif "items" in data and isinstance(data["items"], list):
+                        items = data["items"]
+                elif isinstance(data, list):
+                    items = data
+                
+                if items:
+                    simplified_items = [simplify_event(i) for i in items]
+                    return json.dumps(simplified_items, ensure_ascii=False)
+
             # If n8n returns a "text" or "message" field, use that
             if isinstance(data, dict):
                 return data.get("text", data.get("message", json.dumps(data, ensure_ascii=False)))
@@ -45,20 +75,35 @@ def list_events(max_results: int = 10, calendar_id: str = "primary",  time_min: 
     
     Args:
         max_results: The maximum number of events to return.
-        calendar_id: The ID of the calendar (default: primary).
+        calendar_id: The ID of the calendar (default: primary). To view a shared calendar, use the email address of the owner (e.g., 'colleague@example.com'). Ensure you have permission to view it.
         time_min: Start time in ISO format (e.g., '2023-10-27T00:00:00Z').
         time_max: End time in ISO format (e.g., '2023-10-27T23:59:59Z').
     """
     payload = {
         "maxResults": max_results,
-        "calendarId": calendar_id
+        "calendarId": calendar_id,
+        "timeMin": time_min,
+        "timeMax": time_max
     }
-    if time_min:
-        payload["timeMin"] = time_min
-    if time_max:
-        payload["timeMax"] = time_max
         
     return _call_n8n("list_events", payload)
+
+
+# Mock Contact List - In production, this would come from a DB or LDAP
+CONTACT_LIST = {
+    "ivan": "ivan@example.com",
+    "kevin": "kevin@example.com",
+    "david": "david103132881@gmail.com", 
+    "cindy": "cindy@example.com",
+    "alice": "alice@example.com",
+    "bob": "bob@example.com"
+}
+
+def get_email_by_name(name: str) -> str:
+    """Resolves a name to an email address."""
+    name_lower = name.lower().strip()
+    return CONTACT_LIST.get(name_lower, name)  # Return original if not found (assume it's an email)
+
 
 def check_availability(
     time_min: str, 
@@ -71,12 +116,14 @@ def check_availability(
     Args:
         time_min: Start time in ISO format (e.g., '2023-10-27T09:00:00Z').
         time_max: End time in ISO format (e.g., '2023-10-27T17:00:00Z').
-        emails: A list of email addresses to check.
+        emails: A list of email addresses OR names (e.g. ["Ivan", "kevin@example.com"]).
     """
+    resolved_emails = [get_email_by_name(e) for e in emails]
+    
     return _call_n8n("check_availability", {
         "timeMin": time_min,
         "timeMax": time_max,
-        "items": [{"id": email} for email in emails]
+        "items": resolved_emails
     })
 
 def create_event(
@@ -84,22 +131,40 @@ def create_event(
     start_time: str, 
     end_time: str, 
     attendees: List[str] = [],
-    calendar_id: str = "primary"
+    calendar_id: str = "primary",
+    is_allday: bool = False
 ):
     """
     Creates a new event and invites attendees.
     
     Args:
         summary: The title of the event.
-        start_time: Start time in ISO format.
-        end_time: End time in ISO format.
+        start_time: Start time in ISO format (e.g. '2023-10-27T09:00:00') or date format ('2023-10-27') for all-day.
+        end_time: End time in ISO format or date format.
         attendees: List of email addresses to invite.
         calendar_id: The ID of the calendar to create event in.
+        is_allday: Set to True if this is an all-day event.
     """
-    return _call_n8n("create_event", {
+    
+    # Construct the base event dictionary
+    resolved_attendees = [get_email_by_name(a) for a in attendees]
+    event_payload = {
         "calendarId": calendar_id,
         "summary": summary,
-        "start": {"dateTime": start_time},
-        "end": {"dateTime": end_time},
-        "attendees": [{"email": email} for email in attendees]
-    })
+        "attendees": [{"email": email} for email in resolved_attendees]
+    }
+    
+    if is_allday:
+        # For all-day events, use 'date'. ensure we only send YYYY-MM-DD
+        # Even if the agent sends ISO with time, we strip it.
+        start_date = start_time.split('T')[0]
+        end_date = end_time.split('T')[0]
+        
+        event_payload["start"] = {"date": start_date}
+        event_payload["end"] = {"date": end_date}
+    else:
+        # Regular events use 'dateTime'
+        event_payload["start"] = {"dateTime": start_time}
+        event_payload["end"] = {"dateTime": end_time}
+
+    return _call_n8n("create_event", event_payload)
