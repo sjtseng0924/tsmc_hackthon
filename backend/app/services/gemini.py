@@ -32,6 +32,11 @@ _future_agent = None
 _calendar_agent = None
 _vertex_initialized = False
 
+SYSTEM_INSTRUCTION = (
+    "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
+    "請使用繁體中文，保持專業、冷靜與條理。"
+)
+
 
 def _init_vertex():
     global _vertex_initialized
@@ -54,6 +59,7 @@ def _build_agent(tools):
     return agent_engines.LanggraphAgent(
         model=settings.AGENT_MODEL,
         tools=tools,
+        system_instruction=SYSTEM_INSTRUCTION,
         model_kwargs={
             "temperature": 0.2,
             "max_output_tokens": 20000,
@@ -188,8 +194,6 @@ def _build_future_prompt(user_message: str, history: str, rag_context: str) -> s
 
 def _build_summary_prompt(user_message: str, history: str, rag_context: str) -> str:
     return (
-        "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
-        "請使用繁體中文，保持專業、冷靜與條理。\n"
         "模式：summary_problem（統整報案問題與影響範圍，只能使用對話紀錄內容）。\n"
         "請用純文字回覆並包含以下區段：\n"
         "## 報案問題\n"
@@ -210,8 +214,6 @@ def _build_summary_prompt(user_message: str, history: str, rag_context: str) -> 
 
 def _build_summary_all_prompt(user_message: str, history: str, rag_context: str) -> str:
     return (
-        "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
-        "請使用繁體中文，保持專業、冷靜與條理。\n"
         "**執行步驟 (務必遵守)**：\n"
         "1. **生成回應**：請先根據整理好的資訊，**務必**將完整的 Markdown 報告內容輸出給使用者看。\n"
         "   請嚴格依照下列格式輸出，不要加多餘文字，從對話紀錄找到相關內容務並內容都整理輸出，除了數字以外的分點都用點來表示，縮排務必整齊\n\n"
@@ -300,8 +302,6 @@ def _build_calendar_prompt(user_message: str, history: str, rag_context: str, ch
     current_channel_info = f"當前 Discord 頻道 ID: {channel_id}" if channel_id else "當前 Discord 頻道 ID: 未知 (請詢問使用者)"
 
     return (
-        "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
-        "請使用繁體中文，保持專業、冷靜與條理。\n"
         "模式：calendar（查詢/安排日曆）。\n"
         "所在時區：Asia/Taipei (GMT+8)\n"
         f"現在時間是：{now_str} (請以此時間為基準推斷「現在」、「這週」等相對日期)\n"
@@ -344,8 +344,6 @@ def _build_calendar_prompt(user_message: str, history: str, rag_context: str, ch
 
 def _build_solution_prompt(user_message: str, history: str, rag_context: str) -> str:
     return (
-        "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
-        "請使用繁體中文，保持專業、冷靜與條理。\n"
         "模式：solution（協助解決問題，務必交叉查閱對log、code、結案報告，在每一次的查閱中找到下一次要看的檔案並使用函式，務必這四種每一種調閱都要試過）\n"
         "請一次完成並輸出最終結果，只輸出兩段(回復不能為空非常重要)，不要輸出底下括號內的文字，務必不要查看重複的檔案超過兩次\n"
         "## Issue 發生細節描述\n"
