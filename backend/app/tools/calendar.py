@@ -111,12 +111,31 @@ def check_availability(
     emails: List[str]
 ):
     """
-    Checks the free/busy status for a list of email addresses.
+    Checks if a person is free at a specific time AND finds the next available slot within 2 days.
+    
+    This tool always returns BOTH:
+    1. Current availability (true/false) for the requested time range
+    2. Next free slot within 2 days (with start time, end time, and duration)
+    
+    Use this for ANY availability-related query:
+    - "Is David free now?" → Returns current status + next slot
+    - "When is David free?" → Returns current status + next slot
+    - "Find a time to meet with David" → Returns current status + next slot
     
     Args:
         time_min: Start time in ISO format (e.g., '2023-10-27T09:00:00Z').
         time_max: End time in ISO format (e.g., '2023-10-27T17:00:00Z').
         emails: A list of email addresses OR names (e.g. ["Ivan", "kevin@example.com"]).
+    
+    Returns:
+        {
+            "available": true/false,
+            "next_free_slot": {
+                "start": "ISO timestamp",
+                "end": "ISO timestamp",
+                "duration_minutes": 60
+            }
+        }
     """
     resolved_emails = [get_email_by_name(e) for e in emails]
     
@@ -125,6 +144,35 @@ def check_availability(
         "timeMax": time_max,
         "items": resolved_emails
     })
+
+def find_available_slots(
+    time_min: str, 
+    time_max: str, 
+    emails: List[str]
+):
+    """
+    Alias for check_availability - finds when a person is available.
+    
+    This is identical to check_availability and exists for backward compatibility.
+    It returns BOTH current availability status AND next free slot within 2 days.
+    
+    Args:
+        time_min: Start availability search range (e.g., '2023-10-27T09:00:00Z').
+        time_max: End availability search range.
+        emails: A list of email addresses OR names.
+    
+    Returns:
+        {
+            "available": true/false,
+            "next_free_slot": {
+                "start": "ISO timestamp",
+                "end": "ISO timestamp",
+                "duration_minutes": 60
+            }
+        }
+    """
+    # Just call check_availability - they now do the same thing
+    return check_availability(time_min, time_max, emails)
 
 def create_event(
     summary: str, 

@@ -20,7 +20,7 @@ from app.services.assistant_tools import (
     search_industry_standards,
 )
 from app.services.rag import retrieve_knowledge
-from app.tools.calendar import list_events, create_event, check_availability
+from app.tools.calendar import list_events, create_event, check_availability, find_available_slots
 
 
 _summary_agent = None
@@ -62,6 +62,8 @@ def _build_agent(tools):
 
 def init_models():
     global _summary_agent, _summary_all_agent, _solution_agent, _future_agent, _calendar_agent
+    
+    # Check if already initialized
     if (
         _summary_agent is not None
         and _summary_all_agent is not None
@@ -80,6 +82,7 @@ def init_models():
         list_events,
         create_event,
         check_availability,
+        find_available_slots,
     ]
 
     future_tools = [
@@ -246,19 +249,31 @@ def _build_summary_all_prompt(user_message: str, history: str, rag_context: str)
 
 
 def _build_calendar_prompt(user_message: str, history: str, rag_context: str) -> str:
-    import datetime
-    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    
+    tz = ZoneInfo("Asia/Taipei")
+    now = datetime.now(tz)
+    now_str = now.strftime("%Y-%m-%d %H:%M:%S")
     
     return (
         "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
         "請使用繁體中文，保持專業、冷靜與條理。\n"
         "模式：calendar（查詢/安排日曆）。\n"
-        f"現在時間是：{now_str} (請以此時間為基準推斷「現在」、「這週」等相對日期)\n\n"
+        "所在時區：Asia/Taipei (GMT+8)\n"
+        f"現在時間是：{now_str} (請以此時間為基準推斷「現在」、「這週」等相對日期)\n"
+        "注意：如果外部工具回傳 UTC 時間 (例如結尾為 Z 的時間)，請務必將其轉換為 GMT+8 後再回答使用者。\n\n"
         "**日曆助手進階策略：**\n\n"
+        "**重要：可用性查詢行為**\n"
+        "- `check_availability` 和 `find_available_slots` 現在功能完全相同\n"
+        "- 它們會同時回傳：\n"
+        "  1. 當前時段是否有空（available: true/false）\n"
+        "  2. 接下來 2 天內最快的空檔（next_free_slot）\n"
+        "- 使用任一工具都可以，它們回傳的資料格式一樣\n\n"
         "1. **緊急找人 (Mobilize)**：\n"
         "   - 當使用者問「Ivan 在嗎？」、「Ivan 有空嗎？」或「拉 Ivan 進來」，**預設時間為 現在 (Now)** 至 30 分鐘後。\n"
         "   - 使用 `check_availability` 工具。若不知道 Email，直接使用人名 (如 'Ivan')，系統會自動嘗試查詢。\n"
-        "   - 回覆時請明確告知對方狀態。例如：「Ivan 目前是忙碌狀態 (會議中)，但他將在 10:00 結束。」\n\n"
+        "   - 回答範例：「Ivan 目前是忙碌狀態（會議中）。不過接下來的空檔是今天下午 2:30 - 3:30。」\n\n"
         "2. **建立 War Room (Emergency Sync)**：\n"
         "   - 當聽到「緊急會議」、「War Room」或「線上同步」：\n"
         "     - **summary**: 必須加上 `[Emergency]` 前綴 (例如: `[Emergency] tNote DB Outage War Room`)。\n"
@@ -267,8 +282,8 @@ def _build_calendar_prompt(user_message: str, history: str, rag_context: str) ->
         "     - **attendees**: 自動加入對話中提到的所有相關人員。\n\n"
         "3. **事後檢討 (Post-Mortem)**：\n"
         "   - 當使用者要求「約檢討會」或「Post-Mortem」：\n"
-        "     - 先呼叫 `check_availability` 檢查關鍵人員空檔。\n"
-        "     - 根據回傳的忙碌時段，**主動推薦**一個大家都有空的時間 (例如「明天下午 14:00 - 15:00 大家都有空」)。\n"
+        "     - 先呼叫 `check_availability` 或 `find_available_slots` 查詢關鍵人員。\n"
+        "     - 使用回傳的 `next_free_slot`，**主動推薦**一個大家都有空的時間 (例如「明天下午 14:00 - 15:00 大家都有空」)。\n"
         "\n歷史對話:\n"
         f"{history}\n"
         "\n參考資料:\n"
