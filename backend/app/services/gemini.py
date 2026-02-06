@@ -350,7 +350,10 @@ def run_agent(
         agent = _future_agent
     else:
         agent = _solution_agent
-    response = agent.query(input={"messages": [("user", prompt)]})
+    response = agent.query(
+        input={"messages": [("user", prompt)]},
+        config={"recursion_limit": 60},
+    )
 
     if isinstance(response, str):
         try:
