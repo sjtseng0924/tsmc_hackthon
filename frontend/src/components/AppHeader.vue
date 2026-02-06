@@ -7,8 +7,7 @@
       Incident / Case Knowledge Base
     </div>
     <nav class="app-nav">
-      <RouterLink to="/dashboard">Dashboard</RouterLink>
-      <RouterLink to="/cases">Cases</RouterLink>
+      <RouterLink to="/analysis">Analysis</RouterLink>
     </nav>
   </header>
 </template>

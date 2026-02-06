@@ -22,8 +22,8 @@ export const getCases = async () => {
   return data.items || []
 }
 
-export const getCaseById = async (id) => {
-  return fetchJson(`/cases/${encodeURIComponent(id)}`)
+export const getCaseByFilename = async (filename) => {
+  return fetchJson(`/cases/${encodeURIComponent(filename)}`)
 }
 
 export const getTaxonomy = async () => {
