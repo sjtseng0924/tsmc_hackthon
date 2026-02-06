@@ -136,10 +136,25 @@ def _save_to_db(parsed: Dict[str, Any], content_text: str, source_ref: Optional[
     def parse_dt(dt_str):
         if not dt_str: return None
         if isinstance(dt_str, datetime): return dt_str
+        
+        # Basic cleanup: Remove everything after 'UTC'
+        if "UTC" in dt_str:
+            clean_str = dt_str.split("UTC")[0].strip()
+        else:
+            clean_str = dt_str.strip()
+        
         try:
-            return datetime.fromisoformat(dt_str)
+            return datetime.fromisoformat(clean_str)
         except:
-            return None
+            try:
+                # Try format: YYYY-MM-DD HH:MM
+                return datetime.strptime(clean_str, "%Y-%m-%d %H:%M")
+            except:
+                try:
+                    # Try format: YYYY-MM-DD
+                    return datetime.strptime(clean_str, "%Y-%m-%d")
+                except:
+                    return None
 
     db = SessionLocal()
     try:
