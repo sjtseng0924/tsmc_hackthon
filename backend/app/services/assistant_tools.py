@@ -197,46 +197,30 @@ def search_industry_standards(query: str, limit: int = 5) -> str:
     """
     使用 Google Custom Search 查詢業界標準/最佳實務。
     
-    Auth: Uses Service Account JSON ("townpass-microservice-d04ce025965e.json")
-    Config: Uses GOOGLE_SEARCH_CX from settings.
+    Auth: Uses API key.
+    Config: Uses GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX from settings.
     """
     if not query or not query.strip():
         return "請提供要搜尋的關鍵字 (例如: CI/CD best practices, security linters)。"
 
     _emit_progress(f"目前在看: Google Search 業界標準\n查詢: {query}")
 
-    # 1. 取得 Service Account Credentials
-    try:
-        from google.oauth2 import service_account
-        from googleapiclient.discovery import build
-        
-        # Hardcoded relative path as requested
-        sa_filename = "google-search-SA.json"
-        sa_path = Path(settings.BACKEND_ROOT) / sa_filename
-        
-        # print(f"[DEBUG] Attempting to load Search Service Account from: {sa_path}")
-        # _emit_progress(f"有成功使用 Search Sevice Account: {sa_path}")
-        if not sa_path.exists():
-            return f"找不到 Service Account 金鑰檔案: {sa_filename} (請確認它在 backend 根目錄)"
+    # 1. 取得 API Key 與 CX
+    api_key = settings.GOOGLE_SEARCH_API_KEY
+    if not api_key:
+        _emit_progress("GOOGLE_SEARCH_API_KEY設定失敗")
+        return "未設定 GOOGLE_SEARCH_API_KEY，請在 .env 中設定。"
 
-        creds = service_account.Credentials.from_service_account_file(
-            str(sa_path), 
-            scopes=["https://www.googleapis.com/auth/cse"]
-        )
-        print(f"[DEBUG] Successfully loaded Service Account credentials for: {creds.service_account_email}")
-    except Exception as e:
-        print(f"[ERROR] Failed to load Service Account credentials: {e}")
-    
-    # 2. 取得 CX
     cx = settings.GOOGLE_SEARCH_CX
     if not cx:
         _emit_progress(f"GOOGLE_SEARCH_CX設定失敗")
         return "未設定 GOOGLE_SEARCH_CX，請在 .env 中設定。"
 
-    # 3. 執行搜尋
-    limit = max(1, limit)
+    # 2. 執行搜尋
+    limit = max(1, min(limit, 10))
     try:
-        service = build("customsearch", "v1", credentials=creds)
+        from googleapiclient.discovery import build
+        service = build("customsearch", "v1", developerKey=api_key)
         res = service.cse().list(q=query, cx=cx, num=limit).execute()
         
         items = res.get("items", [])
