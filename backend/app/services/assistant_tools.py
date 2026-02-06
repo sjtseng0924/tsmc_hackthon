@@ -14,11 +14,17 @@ from app.services.message_service import list_recent_messages, search_messages
 
 
 _progress_sender: Optional[Callable[[str], None]] = None
+_log_context_channel_id: Optional[int] = None
 
 
 def set_progress_sender(sender: Optional[Callable[[str], None]]) -> None:
     global _progress_sender
     _progress_sender = sender
+
+
+def set_log_context(channel_id: Optional[int]) -> None:
+    global _log_context_channel_id
+    _log_context_channel_id = channel_id
 
 
 
@@ -29,6 +35,19 @@ def _emit_progress(message: str) -> None:
         _progress_sender(message)
     except Exception:
         return
+
+
+def _log_scenario_filter() -> Optional[int]:
+    if not _log_context_channel_id:
+        return None
+    mapping: dict[int, int] = {}
+    if settings.DISCORD_CHANNEL_ID_1:
+        mapping[int(settings.DISCORD_CHANNEL_ID_1)] = 1
+    if settings.DISCORD_CHANNEL_ID_2:
+        mapping[int(settings.DISCORD_CHANNEL_ID_2)] = 2
+    if settings.DISCORD_CHANNEL_ID_3:
+        mapping[int(settings.DISCORD_CHANNEL_ID_3)] = 3
+    return mapping.get(int(_log_context_channel_id))
 
 
 
@@ -152,11 +171,17 @@ def list_log_files(limit: int = 20) -> str:
     limit = max(1, min(limit, 50))
     db = SessionLocal()
     try:
-        rows = db.query(LogFile).order_by(LogFile.filename.asc()).limit(limit).all()
+        rows = db.query(LogFile).order_by(LogFile.scenario.asc(), LogFile.filename.asc()).all()
+        if not rows:
+            return "目前沒有任何 log 檔案。"
+        scenario_filter = _log_scenario_filter()
+        if scenario_filter:
+            rows = [row for row in rows if row.scenario == scenario_filter]
+        rows = rows[:limit]
         if not rows:
             return "目前沒有任何 log 檔案。"
         lines = ["可用的 log 檔案:"]
-        lines.extend(f"- {row.filename}" for row in rows)
+        lines.extend(f"- Scenario{row.scenario or '-'}: {row.filename}" for row in rows)
         return "\n".join(lines)
     finally:
         db.close()
@@ -177,6 +202,9 @@ def search_log_entries(query: str, file_name: Optional[str] = None, limit: int =
         base = db.query(LogEntry, LogFile).join(LogFile, LogEntry.file_id == LogFile.id)
         if file_name:
             base = base.filter(func.lower(LogFile.filename) == file_name.strip().lower())
+        scenario_filter = _log_scenario_filter()
+        if scenario_filter:
+            base = base.filter(LogFile.scenario == scenario_filter)
         rows = (
             base.filter(func.lower(LogEntry.raw_content).like(q))
             .order_by(desc(LogEntry.timestep), desc(LogEntry.id))
@@ -192,7 +220,8 @@ def search_log_entries(query: str, file_name: Optional[str] = None, limit: int =
             if len(snippet) > 220:
                 snippet = snippet[:220] + "..."
             lines.append(
-                f"[{logfile.filename}#{entry.line_number} {ts}] {snippet}"
+                f"[Scenario{logfile.scenario or '-'}"
+                f":{logfile.filename}#{entry.line_number} {ts}] {snippet}"
             )
         return "\n".join(lines)
     finally:

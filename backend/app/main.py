@@ -48,12 +48,7 @@ class DiscordSendResponse(BaseModel):
 
 
 class WebhookReplayRequest(BaseModel):
-    webhook_url: Optional[str] = Field(
-        default=None, description="Discord webhook URL (fallback to DISCORD_WEBHOOK_URL)"
-    )
-    file_path: Optional[str] = Field(
-        default=None, description="Path to scenario JSON file"
-    )
+    scenario: int = Field(..., ge=1, le=3, description="Scenario number (1-3)")
     mode: Literal["instant", "paced"] = Field(
         default="instant", description="Send all messages instantly or paced"
     )
@@ -127,12 +122,12 @@ async def send_discord_message(payload: DiscordSendRequest) -> DiscordSendRespon
 
 @app.post("/discord/webhook/replay", response_model=WebhookReplayResponse)
 async def replay_webhook(payload: WebhookReplayRequest) -> WebhookReplayResponse:
-    webhook_url = get_webhook_url(payload.webhook_url)
+    webhook_url = get_webhook_url(scenario=payload.scenario)
     if not webhook_url:
         raise HTTPException(status_code=400, detail="Webhook URL not provided")
 
     try:
-        messages = load_replay_messages(payload.file_path)
+        messages = load_replay_messages(payload.scenario)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Scenario file not found") from exc
     except ValueError as exc:

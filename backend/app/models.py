@@ -30,7 +30,8 @@ class Knowledge(Base):
 class LogFile(Base):
     __tablename__ = "log_files"
     id = Column(Integer, primary_key=True, index=True)
-    filename = Column(String, unique=True)
+    scenario = Column(Integer, index=True)
+    filename = Column(String, index=True)
     entries = relationship("LogEntry", back_populates="file", cascade="all, delete-orphan")
 
 class LogEntry(Base):
@@ -62,5 +63,3 @@ class Code(Base):
     filename = Column(String, unique=True)
     content = Column(Text)  # code content
     vector = Column(Vector(768))
-
-

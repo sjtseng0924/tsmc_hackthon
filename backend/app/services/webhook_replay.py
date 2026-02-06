@@ -24,12 +24,30 @@ def _scenario_paths() -> Path:
     return repo_root / "Workshop" / "CommunicationScenario" / "IssueDiscussion.json"
 
 
+def _scenario_path_for_number(scenario_number: int) -> Path:
+    repo_root = Path(settings.BACKEND_ROOT)
+    return repo_root / "Scenario" / f"Scenario{scenario_number}" / "IssueDiscussion.json"
+
+
+def _webhook_for_scenario(scenario: int) -> Optional[str]:
+    if scenario == 1:
+        return settings.DISCORD_WEBHOOK_URL_1
+    if scenario == 2:
+        return settings.DISCORD_WEBHOOK_URL_2
+    if scenario == 3:
+        return settings.DISCORD_WEBHOOK_URL_3
+    return None
+
+
 def _parse_timestamp(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
 
 
-def load_replay_messages(file_path: Optional[str] = None) -> list[ReplayMessage]:
-    path = _scenario_paths() if file_path is None else Path(file_path)
+def load_replay_messages(scenario: Optional[int] = None) -> list[ReplayMessage]:
+    if scenario in (1, 2, 3):
+        path = _scenario_path_for_number(scenario)
+    else:
+        path = _scenario_paths()
     with path.open("r", encoding="utf-8") as handle:
         raw = json.load(handle)
 
@@ -87,10 +105,19 @@ async def _post_webhook(
             raise RuntimeError(f"Webhook error {response.status}: {body}")
 
 
-def get_webhook_url(override: Optional[str]) -> Optional[str]:
-    if override:
-        return override
-    return settings.DISCORD_WEBHOOK_URL
+def _channel_webhook_mapping() -> dict[int, str]:
+    mapping: dict[int, str] = {}
+    if settings.DISCORD_CHANNEL_ID_1 and settings.DISCORD_WEBHOOK_URL_1:
+        mapping[int(settings.DISCORD_CHANNEL_ID_1)] = settings.DISCORD_WEBHOOK_URL_1
+    if settings.DISCORD_CHANNEL_ID_2 and settings.DISCORD_WEBHOOK_URL_2:
+        mapping[int(settings.DISCORD_CHANNEL_ID_2)] = settings.DISCORD_WEBHOOK_URL_2
+    if settings.DISCORD_CHANNEL_ID_3 and settings.DISCORD_WEBHOOK_URL_3:
+        mapping[int(settings.DISCORD_CHANNEL_ID_3)] = settings.DISCORD_WEBHOOK_URL_3
+    return mapping
+
+
+def get_webhook_url(*, scenario: int) -> Optional[str]:
+    return _webhook_for_scenario(scenario)
 
 
 async def replay_via_webhook(

@@ -45,6 +45,15 @@ def _get_token() -> Optional[str]:
     return settings.DISCORD_TOKEN
 
 
+def _allowed_channel_ids() -> set[int]:
+    values = [
+        settings.DISCORD_CHANNEL_ID_1,
+        settings.DISCORD_CHANNEL_ID_2,
+        settings.DISCORD_CHANNEL_ID_3,
+    ]
+    return {int(value) for value in values if value}
+
+
 def _build_discord_client(intents: discord.Intents) -> discord.Client:
     return discord.Client(intents=intents)
 
@@ -107,12 +116,19 @@ class DiscordService:
                 return
             if not message.content:
                 return
-            target_channel_id = settings.DISCORD_CHANNEL_ID
-            if target_channel_id:
-                channel_id = message.channel.id
-                parent_id = getattr(message.channel, "parent_id", None)
-                if channel_id != target_channel_id and parent_id != target_channel_id:
+            allowed_channel_ids = _allowed_channel_ids()
+            channel_id = message.channel.id
+            parent_id = getattr(message.channel, "parent_id", None)
+            if allowed_channel_ids:
+                if channel_id not in allowed_channel_ids and parent_id not in allowed_channel_ids:
                     return
+
+            self._logger.info(
+                "Discord message received channel_id=%s author=%s content=%s",
+                channel_id,
+                message.author,
+                (message.content or "").strip()[:120],
+            )
 
             # Persist all user messages, regardless of mention.
             save_message(
@@ -140,6 +156,7 @@ class DiscordService:
                 assistant_tools.set_progress_sender(
                     _make_progress_sender(self, channel_id, self._loop)
                 )
+                assistant_tools.set_log_context(channel_id)
                 self._append_history(channel_id, "user", prompt)
                 await self._dispatch_agent_reply(
                     channel_id=channel_id,
@@ -152,6 +169,7 @@ class DiscordService:
                 await message.channel.send("發生錯誤，請稍後再試。")
             finally:
                 assistant_tools.set_progress_sender(None)
+                assistant_tools.set_log_context(None)
 
         self._client = client
         self._task = asyncio.create_task(

@@ -40,20 +40,38 @@ def iter_lines(file_path: Path) -> Iterable[tuple[int, str]]:
             yield idx, line.rstrip("\n")
 
 
-def upsert_logfile(db, filename: str) -> LogFile:
-    existing = db.query(LogFile).filter_by(filename=filename).first()
+def infer_scenario(file_path: Path) -> Optional[int]:
+    parts = list(file_path.parts)
+    if "Scenario" in parts:
+        idx = parts.index("Scenario")
+        if idx + 1 < len(parts):
+            name = parts[idx + 1]
+            if name.lower().startswith("scenario"):
+                suffix = name[len("Scenario") :]
+                if suffix.isdigit():
+                    return int(suffix)
+    return None
+
+
+def upsert_logfile(db, filename: str, scenario: Optional[int]) -> LogFile:
+    existing = (
+        db.query(LogFile)
+        .filter_by(filename=filename, scenario=scenario)
+        .first()
+    )
     if existing:
         db.query(LogEntry).filter_by(file_id=existing.id).delete()
         return existing
-    lf = LogFile(filename=filename)
+    lf = LogFile(filename=filename, scenario=scenario)
     db.add(lf)
     db.flush()
     return lf
 
 
-def ingest_file(db, file_path: Path) -> None:
+def ingest_file(db, file_path: Path, scenario: Optional[int] = None) -> None:
     filename = file_path.name
-    logfile = upsert_logfile(db, filename)
+    scenario = scenario or infer_scenario(file_path)
+    logfile = upsert_logfile(db, filename, scenario)
 
     entries = []
     for line_no, line in iter_lines(file_path):
@@ -76,10 +94,11 @@ def ingest_file(db, file_path: Path) -> None:
         )
     db.add_all(entries)
     db.commit()
-    print(f"Saved {len(entries)} lines from {filename}")
+    scenario_label = scenario if scenario is not None else "-"
+    print(f"Saved {len(entries)} lines from Scenario{scenario_label}:{filename}")
 
 
-def ingest_paths(paths: list[Path]) -> None:
+def ingest_paths(paths: list[Path], scenario: Optional[int] = None) -> None:
     db = SessionLocal()
     try:
         deleted_entries = db.query(LogEntry).delete()
@@ -90,18 +109,16 @@ def ingest_paths(paths: list[Path]) -> None:
             if not p.exists():
                 print(f"[skip] {p} not found")
                 continue
-            ingest_file(db, p)
+            ingest_file(db, p, scenario=scenario)
     finally:
         db.close()
 
 
 def default_logs() -> list[Path]:
-    base = project_root / "Workshop" / "ScenarioLogFolder"
-    return [
-        base / "firewall.log",
-        base / "postgresql.log",
-        base / "tNote_app_server_v1.log",
-    ]
+    base = project_root / "Scenario"
+    if not base.exists():
+        return []
+    return sorted(p for p in base.glob("Scenario*/LogFolder/*") if p.is_file())
 
 
 def parse_args():
@@ -112,10 +129,16 @@ def parse_args():
         default=None,
         help="Specific log files to ingest (default: known files in ScenarioLogFolder)",
     )
+    parser.add_argument(
+        "--scenario",
+        default=None,
+        type=int,
+        help="Optional scenario number to assign to all ingested files",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
     targets = [Path(p).resolve() for p in args.files] if args.files else default_logs()
-    ingest_paths(targets)
+    ingest_paths(targets, scenario=args.scenario)
