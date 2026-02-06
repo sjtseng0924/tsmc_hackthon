@@ -31,6 +31,18 @@ const formatDate = (ds) => {
 }
 
 const severityClass = computed(() => caseItem.value?.severity?.toLowerCase())
+
+const formatRichText = (text) => {
+  if (!text) return ''
+  const escaped = String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+  const withCode = escaped.replace(/`([^`]+)`/g, '<code>$1</code>')
+  return withCode.replace(/\n/g, '<br>')
+}
 </script>
 
 <template>
@@ -83,26 +95,24 @@ const severityClass = computed(() => caseItem.value?.severity?.toLowerCase())
       <!-- Section 1: Problem & Impact -->
       <section class="report-section">
         <h2 class="section-heading">Reported Problem</h2>
-        <div class="content-block primary">
-          {{ caseItem.reportProblem }}
-        </div>
+        <div class="content-block primary" v-html="formatRichText(caseItem.reportProblem)"></div>
 
         <h3 class="sub-heading">Impact Analysis</h3>
         <div class="impact-grid">
           <div class="impact-card service">
             <div class="icon">S</div>
             <div class="title">Service Impact</div>
-            <div class="desc">{{ caseItem.impactService || 'None' }}</div>
+            <div class="desc" v-html="formatRichText(caseItem.impactService || 'None')"></div>
           </div>
           <div class="impact-card user">
             <div class="icon">U</div>
             <div class="title">User Impact</div>
-            <div class="desc">{{ caseItem.impactUser || 'None' }}</div>
+            <div class="desc" v-html="formatRichText(caseItem.impactUser || 'None')"></div>
           </div>
           <div class="impact-card data">
             <div class="icon">D</div>
             <div class="title">Data Impact</div>
-            <div class="desc">{{ caseItem.impactData || 'None' }}</div>
+            <div class="desc" v-html="formatRichText(caseItem.impactData || 'None')"></div>
           </div>
         </div>
       </section>
@@ -114,17 +124,17 @@ const severityClass = computed(() => caseItem.value?.severity?.toLowerCase())
         <div class="deep-dive-grid">
           <div class="dd-item">
             <h3>Root Cause</h3>
-            <div class="content-text">{{ caseItem.rootCause }}</div>
+            <div class="content-text" v-html="formatRichText(caseItem.rootCause)"></div>
           </div>
           
           <div class="dd-item full-width" v-if="caseItem.eventDetails">
             <h3>Event Details</h3>
-            <div class="content-text">{{ caseItem.eventDetails }}</div>
+            <div class="content-text" v-html="formatRichText(caseItem.eventDetails)"></div>
           </div>
 
           <div class="dd-item full-width bg-highlight" v-if="caseItem.inferenceProcess">
              <h3>🤖 AI Inference Process</h3>
-             <div class="content-text">{{ caseItem.inferenceProcess }}</div>
+             <div class="content-text" v-html="formatRichText(caseItem.inferenceProcess)"></div>
           </div>
         </div>
       </section>
@@ -135,7 +145,7 @@ const severityClass = computed(() => caseItem.value?.severity?.toLowerCase())
         <div class="timeline-container">
           <div v-for="(event, index) in caseItem.timeline" :key="index" class="timeline-event">
             <div class="marker"></div>
-            <div class="event-content">{{ event }}</div>
+            <div class="event-content" v-html="formatRichText(event)"></div>
           </div>
         </div>
       </section>
@@ -143,9 +153,7 @@ const severityClass = computed(() => caseItem.value?.severity?.toLowerCase())
       <!-- Section 4: Solution -->
       <section class="report-section solution-bg">
         <h2 class="section-heading">Solution</h2>
-        <div class="content-text large-text">
-          {{ caseItem.solution }}
-        </div>
+        <div class="content-text large-text" v-html="formatRichText(caseItem.solution)"></div>
       </section>
 
       <!-- Section 5: Prevention -->
@@ -159,7 +167,7 @@ const severityClass = computed(() => caseItem.value?.severity?.toLowerCase())
               <span class="pm-title">{{ pm.title }}</span>
               <span class="pm-owner">{{ pm.owner }}</span>
             </div>
-            <div class="pm-content">{{ pm.content }}</div>
+            <div class="pm-content" v-html="formatRichText(pm.content)"></div>
             <a v-if="pm.link" :href="pm.link" target="_blank" class="pm-link">Reference Link →</a>
           </div>
         </div>
@@ -168,7 +176,7 @@ const severityClass = computed(() => caseItem.value?.severity?.toLowerCase())
         <div class="risks-list" v-if="caseItem.hiddenRisks?.length">
           <div v-for="(risk, idx) in caseItem.hiddenRisks" :key="idx" class="risk-item">
             <div class="risk-title">{{ risk.title }}</div>
-            <div class="risk-content">{{ risk.content }}</div>
+            <div class="risk-content" v-html="formatRichText(risk.content)"></div>
             <a v-if="risk.link" :href="risk.link" target="_blank" class="risk-link">Risk Reference</a>
           </div>
         </div>
