@@ -38,7 +38,7 @@ def _emit_progress(message: str) -> None:
 
 
 def _log_scenario_filter() -> Optional[int]:
-    if not _log_context_channel_id:
+    if _log_context_channel_id is None:
         return None
     mapping: dict[int, int] = {}
     if settings.DISCORD_CHANNEL_ID_1:
@@ -47,7 +47,10 @@ def _log_scenario_filter() -> Optional[int]:
         mapping[int(settings.DISCORD_CHANNEL_ID_2)] = 2
     if settings.DISCORD_CHANNEL_ID_3:
         mapping[int(settings.DISCORD_CHANNEL_ID_3)] = 3
-    return mapping.get(int(_log_context_channel_id))
+    scenario = mapping.get(int(_log_context_channel_id))
+    if scenario is None:
+        return -1
+    return scenario
 
 
 def _message_scenario_filter() -> Optional[int]:
@@ -83,6 +86,10 @@ def list_recent_discord_messages(limit: int = 20) -> str:
     Use this to understand recent conversation context.
     """
     scenario_filter = _message_scenario_filter()
+    if scenario_filter is None:
+        return "未提供 channel context，無法讀取 Discord 對話紀錄。"
+    if scenario_filter == -1:
+        return "channel id 未對應任何 scenario，無法讀取 Discord 對話紀錄。"
     items = list_recent_messages(limit=limit, scenario=scenario_filter)
     if not items:
         return "沒有可用的 Discord 對話紀錄。"
@@ -97,6 +104,10 @@ def search_discord_messages(query: str, limit: int = 20) -> str:
     Use this to find relevant discussions or context.
     """
     scenario_filter = _message_scenario_filter()
+    if scenario_filter is None:
+        return "未提供 channel context，無法搜尋 Discord 對話紀錄。"
+    if scenario_filter == -1:
+        return "channel id 未對應任何 scenario，無法搜尋 Discord 對話紀錄。"
     items = search_messages(query=query, limit=limit, scenario=scenario_filter)
     if not items:
         return "找不到相關的 Discord 對話紀錄。"
@@ -180,9 +191,13 @@ def list_log_files(limit: int = 20) -> str:
         rows = db.query(LogFile).order_by(LogFile.scenario.asc(), LogFile.filename.asc()).all()
         if not rows:
             return "目前沒有任何 log 檔案。"
-        scenario_filter = _log_scenario_filter()
-        if scenario_filter:
-            rows = [row for row in rows if row.scenario == scenario_filter]
+    scenario_filter = _log_scenario_filter()
+    if scenario_filter is None:
+        return "未提供 channel context，無法讀取 log 檔案。"
+    if scenario_filter == -1:
+        return "channel id 未對應任何 scenario，無法讀取 log 檔案。"
+    if scenario_filter is not None:
+        rows = [row for row in rows if row.scenario == scenario_filter]
         rows = rows[:limit]
         if not rows:
             return "目前沒有任何 log 檔案。"
@@ -208,9 +223,13 @@ def search_log_entries(query: str, file_name: Optional[str] = None, limit: int =
         base = db.query(LogEntry, LogFile).join(LogFile, LogEntry.file_id == LogFile.id)
         if file_name:
             base = base.filter(func.lower(LogFile.filename) == file_name.strip().lower())
-        scenario_filter = _log_scenario_filter()
-        if scenario_filter:
-            base = base.filter(LogFile.scenario == scenario_filter)
+    scenario_filter = _log_scenario_filter()
+    if scenario_filter is None:
+        return "未提供 channel context，無法搜尋 log。"
+    if scenario_filter == -1:
+        return "channel id 未對應任何 scenario，無法搜尋 log。"
+    if scenario_filter is not None:
+        base = base.filter(LogFile.scenario == scenario_filter)
         rows = (
             base.filter(func.lower(LogEntry.raw_content).like(q))
             .order_by(desc(LogEntry.timestep), desc(LogEntry.id))

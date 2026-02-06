@@ -49,7 +49,7 @@ def list_recent_messages(limit: int = 20, scenario: Optional[int] = None) -> lis
     db = SessionLocal()
     try:
         query = db.query(Message)
-        if scenario:
+        if scenario is not None:
             query = query.filter(Message.scenario == scenario)
         return (
             query.order_by(desc(Message.timestamp), desc(Message.id))
@@ -74,7 +74,7 @@ def search_messages(query: str, limit: int = 20, scenario: Optional[int] = None)
                 func.lower(Message.role).like(q),
             )
         )
-        if scenario:
+        if scenario is not None:
             query = query.filter(Message.scenario == scenario)
         return (
             query.order_by(desc(Message.timestamp), desc(Message.id))

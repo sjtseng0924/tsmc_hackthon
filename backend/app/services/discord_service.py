@@ -54,14 +54,33 @@ def _allowed_channel_ids() -> set[int]:
     return {int(value) for value in values if value}
 
 
-def _scenario_for_channel(channel_id: int) -> Optional[int]:
-    if settings.DISCORD_CHANNEL_ID_1 and channel_id == int(settings.DISCORD_CHANNEL_ID_1):
-        return 1
-    if settings.DISCORD_CHANNEL_ID_2 and channel_id == int(settings.DISCORD_CHANNEL_ID_2):
-        return 2
-    if settings.DISCORD_CHANNEL_ID_3 and channel_id == int(settings.DISCORD_CHANNEL_ID_3):
-        return 3
+def _scenario_for_channel(
+    channel_id: int, parent_id: Optional[int] = None
+) -> Optional[int]:
+    candidates = [channel_id]
+    if parent_id is not None and parent_id not in candidates:
+        candidates.append(parent_id)
+    for candidate in candidates:
+        if settings.DISCORD_CHANNEL_ID_1 and candidate == int(settings.DISCORD_CHANNEL_ID_1):
+            return 1
+        if settings.DISCORD_CHANNEL_ID_2 and candidate == int(settings.DISCORD_CHANNEL_ID_2):
+            return 2
+        if settings.DISCORD_CHANNEL_ID_3 and candidate == int(settings.DISCORD_CHANNEL_ID_3):
+            return 3
     return None
+
+
+def _context_channel_id(channel_id: int, parent_id: Optional[int] = None) -> int:
+    scenario = _scenario_for_channel(channel_id, parent_id)
+    if scenario is None:
+        return channel_id
+    if scenario == 1 and settings.DISCORD_CHANNEL_ID_1:
+        return int(settings.DISCORD_CHANNEL_ID_1)
+    if scenario == 2 and settings.DISCORD_CHANNEL_ID_2:
+        return int(settings.DISCORD_CHANNEL_ID_2)
+    if scenario == 3 and settings.DISCORD_CHANNEL_ID_3:
+        return int(settings.DISCORD_CHANNEL_ID_3)
+    return channel_id
 
 
 def _build_discord_client(intents: discord.Intents) -> discord.Client:
@@ -95,6 +114,7 @@ class DiscordService:
         self._client: Optional[discord.Client] = None
         self._task: Optional[asyncio.Task] = None
         self._history: dict[int, list[dict]] = {}
+        self._channel_scenarios: dict[int, Optional[int]] = {}
         self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     @property
@@ -141,7 +161,8 @@ class DiscordService:
             )
 
             # Persist all user messages, regardless of mention.
-            scenario = _scenario_for_channel(channel_id)
+            scenario = _scenario_for_channel(channel_id, parent_id)
+            self._channel_scenarios[channel_id] = scenario
             save_message(
                 external_id=str(message.id),
                 timestamp=message.created_at,
@@ -168,7 +189,8 @@ class DiscordService:
                 assistant_tools.set_progress_sender(
                     _make_progress_sender(self, channel_id, self._loop)
                 )
-                assistant_tools.set_log_context(channel_id)
+                context_channel_id = _context_channel_id(channel_id, parent_id)
+                assistant_tools.set_log_context(context_channel_id)
                 self._append_history(channel_id, "user", prompt)
                 await self._dispatch_agent_reply(
                     channel_id=channel_id,
@@ -303,7 +325,9 @@ class DiscordService:
         for chunk in _chunk_message(content):
             bot_msg = await channel.send(chunk)
             self._append_history(channel_id, "assistant", chunk)
-            scenario = _scenario_for_channel(channel_id)
+            scenario = self._channel_scenarios.get(channel_id)
+            if scenario is None:
+                scenario = _scenario_for_channel(channel_id)
             save_message(
                 external_id=str(bot_msg.id),
                 timestamp=bot_msg.created_at,

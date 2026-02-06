@@ -67,6 +67,12 @@ class WebhookReplayResponse(BaseModel):
 class GeminiAgentRequest(BaseModel):
     user_message: str = Field(..., description="使用者訊息")
     rag_context: str = Field(default="", description="RAG 上下文")
+    channel_id: Optional[int] = Field(
+        default=None, description="Discord channel ID (for log/message scoping)"
+    )
+    parent_channel_id: Optional[int] = Field(
+        default=None, description="Parent channel ID if using threads"
+    )
 
 
 class GeminiAgentResponse(BaseModel):
@@ -157,14 +163,30 @@ async def agent_handler(payload: GeminiAgentRequest) -> GeminiAgentResponse:
     try:
         logger.info(f"收到訊息: {payload.user_message}")
 
+        if payload.channel_id is not None:
+            from app.services import assistant_tools
+            from app.services.discord_service import _context_channel_id
+
+            context_channel_id = _context_channel_id(
+                payload.channel_id, payload.parent_channel_id
+            )
+            assistant_tools.set_log_context(context_channel_id)
+
         result = run_agent(
             user_message=payload.user_message,
             rag_context=payload.rag_context,
         )
 
+        if payload.channel_id is not None:
+            assistant_tools.set_log_context(None)
+
         return GeminiAgentResponse(success=True, data=result)
 
     except Exception as e:
+        if payload.channel_id is not None:
+            from app.services import assistant_tools
+
+            assistant_tools.set_log_context(None)
         logger.error(f"Gemini Agent 錯誤: {str(e)}")
         return GeminiAgentResponse(success=False, error=str(e))
 
