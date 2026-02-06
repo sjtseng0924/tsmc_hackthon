@@ -2,6 +2,7 @@
 import os
 import json
 import math
+import logging
 from typing import Optional
 
 import vertexai
@@ -25,6 +26,7 @@ from app.services.rag import retrieve_knowledge, get_embedding
 from app.tools.calendar import list_events, create_event, check_availability, find_available_slots
 from app.tools.discord import add_user_to_channel, search_users_with_discord
 
+logger = logging.getLogger("discord-backend")
 
 _summary_agent = None
 _summary_all_agent = None
@@ -217,7 +219,12 @@ def _semantic_intent_fallback(text: str) -> Optional[str]:
                 best_score = score
                 best_intent = intent
 
-    if best_score < 0.5:
+    logger.info(
+        "semantic_intent best_score=%.4f best_intent=%s",
+        best_score,
+        best_intent,
+    )
+    if best_score < 0.7:
         return None
     return best_intent
 
