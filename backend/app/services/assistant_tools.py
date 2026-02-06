@@ -191,13 +191,13 @@ def list_log_files(limit: int = 20) -> str:
         rows = db.query(LogFile).order_by(LogFile.scenario.asc(), LogFile.filename.asc()).all()
         if not rows:
             return "目前沒有任何 log 檔案。"
-    scenario_filter = _log_scenario_filter()
-    if scenario_filter is None:
-        return "未提供 channel context，無法讀取 log 檔案。"
-    if scenario_filter == -1:
-        return "channel id 未對應任何 scenario，無法讀取 log 檔案。"
-    if scenario_filter is not None:
-        rows = [row for row in rows if row.scenario == scenario_filter]
+        scenario_filter = _log_scenario_filter()
+        if scenario_filter is None:
+            return "未提供 channel context，無法讀取 log 檔案。"
+        if scenario_filter == -1:
+            return "channel id 未對應任何 scenario，無法讀取 log 檔案。"
+        if scenario_filter is not None:
+            rows = [row for row in rows if row.scenario == scenario_filter]
         rows = rows[:limit]
         if not rows:
             return "目前沒有任何 log 檔案。"
@@ -223,13 +223,13 @@ def search_log_entries(query: str, file_name: Optional[str] = None, limit: int =
         base = db.query(LogEntry, LogFile).join(LogFile, LogEntry.file_id == LogFile.id)
         if file_name:
             base = base.filter(func.lower(LogFile.filename) == file_name.strip().lower())
-    scenario_filter = _log_scenario_filter()
-    if scenario_filter is None:
-        return "未提供 channel context，無法搜尋 log。"
-    if scenario_filter == -1:
-        return "channel id 未對應任何 scenario，無法搜尋 log。"
-    if scenario_filter is not None:
-        base = base.filter(LogFile.scenario == scenario_filter)
+        scenario_filter = _log_scenario_filter()
+        if scenario_filter is None:
+            return "未提供 channel context，無法搜尋 log。"
+        if scenario_filter == -1:
+            return "channel id 未對應任何 scenario，無法搜尋 log。"
+        if scenario_filter is not None:
+            base = base.filter(LogFile.scenario == scenario_filter)
         rows = (
             base.filter(func.lower(LogEntry.raw_content).like(q))
             .order_by(desc(LogEntry.timestep), desc(LogEntry.id))
