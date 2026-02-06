@@ -103,7 +103,7 @@ def search_industry_standards(query: str, limit: int = 5) -> str:
         
         # print(f"[DEBUG] Attempting to load Search Service Account from: {sa_path}")
         # _emit_progress(f"有成功使用 Search Sevice Account: {sa_path}")
-        if not sa_path.exists():=
+        if not sa_path.exists():
             return f"找不到 Service Account 金鑰檔案: {sa_filename} (請確認它在 backend 根目錄)"
 
         creds = service_account.Credentials.from_service_account_file(
