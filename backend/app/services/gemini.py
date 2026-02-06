@@ -10,7 +10,6 @@ from vertexai import agent_engines
 
 from app.config import settings
 from app.services.assistant_tools import (
-    build_case_link,
     get_case_report,
     get_code_file,
     list_case_reports,
@@ -97,8 +96,7 @@ def init_models():
 
     summary_tools = []
     summary_all_tools = [
-        submit_incident_report,
-        build_case_link,
+        submit_incident_report
     ]
 
     calendar_tools = [
@@ -330,9 +328,9 @@ def _build_summary_prompt(user_message: str, history: str, rag_context: str) -> 
 def _build_summary_all_prompt(user_message: str, history: str, rag_context: str) -> str:
     frontend_host = (settings.FRONTEND_HOST or "FRONTEND_HOST").strip()
     if frontend_host.startswith("http://") or frontend_host.startswith("https://"):
-        case_url_template = f"{frontend_host.rstrip('/')}/case/文件編號"
+        case_url_template = f"{frontend_host.rstrip('/')}/cases/文件編號"
     else:
-        case_url_template = f"http://{frontend_host.strip('/')}/case/文件編號"
+        case_url_template = f"http://{frontend_host.strip('/')}/cases/文件編號"
     return (
         "**執行步驟 (務必遵守)**：\n"
         "1. **生成回應**：請先根據整理好的資訊，**務必**將完整的 Markdown 報告內容輸出給使用者看。\n"
@@ -400,9 +398,7 @@ def _build_summary_all_prompt(user_message: str, history: str, rag_context: str)
         "   - `solution`: 對應「解決方案」\n"
         "   - `preventive_measures`: 將「未來預防措施」轉為 List of Dict (必須包含 `title`, `content`, `owner`, `link`)\n"
         "   - `hidden_risks`: 將「隱藏的危險及優化方法」轉為 List of Dict (必須包含 `title`, `content`, `link`)\n\n"
-        "3. **產生案件網址**：在完成 `submit_incident_report` 後，**必須**呼叫 `build_case_link` 工具。\n"
-        "   - `filename`: 使用「文件編號」\n"
-        "   - 取得結果後，請在最末尾**單獨一行**輸出：\n"
+        "3. **產生案件網址**：在完成 `submit_incident_report` 後，**必須** 傳送案件網址，並在最末尾**單獨一行**輸出。\n"
         f"     案件網址: {case_url_template}\n\n"
         "請務必回覆內容，不要省略任何區塊。\n"
         "存入資料庫時請將上述內容轉為對應的參數格式。\n"
@@ -506,6 +502,8 @@ def run_agent(
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     resolved_mode = mode or _detect_intent(user_message)
+    logger.info(f"run_agent intent resolved_mode={resolved_mode}")
+    
     if resolved_mode == "unknown":
         return {
             "message": (

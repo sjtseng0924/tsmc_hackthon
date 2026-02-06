@@ -102,22 +102,6 @@ def submit_incident_report(
         return f"存檔失敗: {str(e)}"
 
 
-def build_case_link(filename: str) -> str:
-    """
-    Build a case link for frontend navigation.
-    """
-    if not filename:
-        return "未提供文件編號，無法建立案件連結。"
-    host = (settings.FRONTEND_HOST or "").strip()
-    if not host:
-        return f"前端網址未設定，無法建立案件連結。文件編號: {filename}"
-    if host.startswith("http://") or host.startswith("https://"):
-        base = host.rstrip("/")
-    else:
-        base = f"http://{host.strip('/')}"
-    return f"{base}/case/{filename}"
-
-
 _progress_sender: Optional[Callable[[str], None]] = None
 _log_context_channel_id: Optional[int] = None
 
