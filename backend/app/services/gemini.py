@@ -224,7 +224,7 @@ def _semantic_intent_fallback(text: str) -> Optional[str]:
         best_score,
         best_intent,
     )
-    if best_score < 0.7:
+    if best_score < 0.75:
         return None
     return best_intent
 
