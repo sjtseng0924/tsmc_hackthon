@@ -41,7 +41,7 @@ _summary_all_agent = None
 _solution_agent = None
 _future_agent = None
 _calendar_agent = None
-
+_vertex_initialized = False
 
 SYSTEM_INSTRUCTION = (
     "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
