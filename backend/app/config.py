@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
     
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
+    FRONTEND_HOST: Optional[str] = None
     VERTEX_PROJECT: Optional[str] = None
     VERTEX_LOCATION: Optional[str] = "us-central1"
     
