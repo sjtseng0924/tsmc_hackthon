@@ -64,3 +64,15 @@ class Code(Base):
     filename = Column(String, unique=True)
     content = Column(Text)  # code content
     vector = Column(Vector(768))
+
+# Contact Model - Maps names to email addresses and Discord IDs
+class Contact(Base):
+    __tablename__ = "contacts"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, index=True)  # Display name (case-insensitive index)
+    email = Column(String, nullable=False, unique=True, index=True)  # Gmail address
+    discord_id = Column(String, nullable=True, unique=True, index=True)  # Discord user ID
+    department = Column(String, nullable=True)  # Optional: department/team
+    is_active = Column(Integer, default=1)  # 1=active, 0=inactive
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

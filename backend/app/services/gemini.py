@@ -21,6 +21,7 @@ from app.services.assistant_tools import (
 )
 from app.services.rag import retrieve_knowledge
 from app.tools.calendar import list_events, create_event, check_availability, find_available_slots
+from app.tools.discord import add_user_to_channel, search_users_with_discord
 
 
 _summary_agent = None
@@ -83,6 +84,8 @@ def init_models():
         create_event,
         check_availability,
         find_available_slots,
+        add_user_to_channel,
+        search_users_with_discord,
     ]
 
     future_tools = [
@@ -118,7 +121,8 @@ def _detect_intent(user_message: str) -> str:
     text = (user_message or "").lower()
     if any(keyword in text for keyword in ["結案報告", "事故結案", "post-mortem", "post mortem", "結案"]):
         return "summary_all"
-    if any(keyword in text for keyword in ["行程", "日曆", "行事曆", "會議", "邀請", "空檔", "有空", "可用時間"]):
+    # Discord + Calendar 相關都用 calendar mode (因為 Discord tools 也在 calendar_agent 中)
+    if any(keyword in text for keyword in ["行程", "日曆", "行事曆", "會議", "邀請", "空檔", "有空", "可用時間", "加進頻道", "加入頻道", "拉進來", "加入討論", "discord"]):
         return "calendar"
     if any(keyword in text for keyword in ["報案問題", "影響範圍"]):
         return "summary_problem"
@@ -140,13 +144,13 @@ def _history_to_text(history: Optional[list[dict]]) -> str:
     return "\n".join(lines)
 
 
-def _build_prompt(user_message: str, mode: str, history: str, rag_context: str) -> str:
+def _build_prompt(user_message: str, mode: str, history: str, rag_context: str, channel_id: Optional[int] = None) -> str:
     if mode == "summary_all":
         return _build_summary_all_prompt(user_message, history, rag_context)
     if mode == "summary_problem":
         return _build_summary_prompt(user_message, history, rag_context)
     if mode == "calendar":
-        return _build_calendar_prompt(user_message, history, rag_context)
+        return _build_calendar_prompt(user_message, history, rag_context, channel_id)
     if mode == "future_improve":
         return _build_future_prompt(user_message, history, rag_context)
     return _build_solution_prompt(user_message, history, rag_context)
@@ -260,7 +264,7 @@ def _build_summary_all_prompt(user_message: str, history: str, rag_context: str)
     )
 
 
-def _build_calendar_prompt(user_message: str, history: str, rag_context: str) -> str:
+def _build_calendar_prompt(user_message: str, history: str, rag_context: str, channel_id: Optional[int] = None) -> str:
     from datetime import datetime
     from zoneinfo import ZoneInfo
     
@@ -268,34 +272,42 @@ def _build_calendar_prompt(user_message: str, history: str, rag_context: str) ->
     now = datetime.now(tz)
     now_str = now.strftime("%Y-%m-%d %H:%M:%S")
     
+    current_channel_info = f"當前 Discord 頻道 ID: {channel_id}" if channel_id else "當前 Discord 頻道 ID: 未知 (請詢問使用者)"
+
     return (
         "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
         "請使用繁體中文，保持專業、冷靜與條理。\n"
         "模式：calendar（查詢/安排日曆）。\n"
         "所在時區：Asia/Taipei (GMT+8)\n"
         f"現在時間是：{now_str} (請以此時間為基準推斷「現在」、「這週」等相對日期)\n"
+        f"{current_channel_info}\n"
         "注意：如果外部工具回傳 UTC 時間 (例如結尾為 Z 的時間)，請務必將其轉換為 GMT+8 後再回答使用者。\n\n"
         "**日曆助手進階策略：**\n\n"
-        "**重要：可用性查詢行為**\n"
-        "- `check_availability` 和 `find_available_slots` 現在功能完全相同\n"
-        "- 它們會同時回傳：\n"
-        "  1. 當前時段是否有空（available: true/false）\n"
-        "  2. 接下來 2 天內最快的空檔（next_free_slot）\n"
-        "- 使用任一工具都可以，它們回傳的資料格式一樣\n\n"
+        "**重要：全能可用性檢查 (Unified Check)**\n"
+        "- `check_availability` (和 `find_available_slots`) 現在是**全能工具**。\n"
+        "- 你可以在同一次呼叫中完成：**檢查時間** + **如果有空自動執行動作**。\n"
+        "- **不要**分開呼叫檢查和後續動作，請直接使用參數串聯。\n\n"
         "1. **緊急找人 (Mobilize)**：\n"
-        "   - 當使用者問「Ivan 在嗎？」、「Ivan 有空嗎？」或「拉 Ivan 進來」，**預設時間為 現在 (Now)** 至 30 分鐘後。\n"
-        "   - 使用 `check_availability` 工具。若不知道 Email，直接使用人名 (如 'Ivan')，系統會自動嘗試查詢。\n"
-        "   - 回答範例：「Ivan 目前是忙碌狀態（會議中）。不過接下來的空檔是今天下午 2:30 - 3:30。」\n\n"
+        "   - 「Ivan 在嗎？」、「拉 Ivan 進來」\n"
+        "   - 直接呼叫 `check_availability`，設定參數：\n"
+        "     - `add_to_channel=True` (如果有空就加入頻道)\n"
+        "     - `channel_id` (當前頻道 ID，字串格式)\n"
+        "     - `discord_user_name` (人名，如 'Ivan')\n"
+        "   - 系統會自動檢查時間，如果有空就會直接把他加進來，並回傳結果。\n\n"
         "2. **建立 War Room (Emergency Sync)**：\n"
-        "   - 當聽到「緊急會議」、「War Room」或「線上同步」：\n"
-        "     - **summary**: 必須加上 `[Emergency]` 前綴 (例如: `[Emergency] tNote DB Outage War Room`)。\n"
-        "     - **description**: 請將目前的對話摘要放入描述中，讓與會者知道發生什麼事。\n"
-        "     - **is_allday**: False。\n"
-        "     - **attendees**: 自動加入對話中提到的所有相關人員。\n\n"
-        "3. **事後檢討 (Post-Mortem)**：\n"
-        "   - 當使用者要求「約檢討會」或「Post-Mortem」：\n"
-        "     - 先呼叫 `check_availability` 或 `find_available_slots` 查詢關鍵人員。\n"
-        "     - 使用回傳的 `next_free_slot`，**主動推薦**一個大家都有空的時間 (例如「明天下午 14:00 - 15:00 大家都有空」)。\n"
+        "   - 「緊急會議」、「War Room」、「線上同步」\n"
+        "   - 直接呼叫 `check_availability`，設定參數：\n"
+        "     - `create_event=True` (如果有空就建會議)\n"
+        "     - `event_summary='[Emergency]...'`\n"
+        "     - `add_to_channel=True` (順便拉進 Discord)\n"
+        "   - 這樣只需要一次工具呼叫就能完成所有流程。\n\n"
+        "3. **Discord 邀請**：\n"
+        "   - 「把 Kevin 加進頻道」\n"
+        "   - 優先使用 `check_availability(..., add_to_channel=True)`，確保他有空才拉進來。\n"
+        "   - 只有在不關心對方有沒有空的情況下，才使用 `add_user_to_channel`。\n\n"
+        "4. **事後檢討 (Post-Mortem)**：\n"
+        "   - 「約檢討會」\n"
+        "   - 使用 `check_availability` 查詢並透過回傳的參數尋找空檔。\n"
         "\n歷史對話:\n"
         f"{history}\n"
         "\n參考資料:\n"
@@ -332,6 +344,7 @@ def run_agent(
     rag_context: str = "",
     conversation_history: Optional[list[dict]] = None,
     mode: Optional[str] = None,
+    channel_id: Optional[int] = None,
 ) -> dict:
     init_models()
 
@@ -350,6 +363,7 @@ def run_agent(
         resolved_mode,
         history_text,
         rag_context or summary_context,
+        channel_id=channel_id,
     )
 
     if resolved_mode == "summary_problem":

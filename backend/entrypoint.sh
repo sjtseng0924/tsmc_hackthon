@@ -10,6 +10,7 @@ done
 echo "Database is ready!"
 
 alembic upgrade head
+python script/seed_initial_data.py
 python app/script/ingest_knowledge.py
 python app/script/ingest_logs.py
 python app/script/ingest_code_file.py

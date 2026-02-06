@@ -89,66 +89,157 @@ def list_events(max_results: int = 10, calendar_id: str = "primary",  time_min: 
     return _call_n8n("list_events", payload)
 
 
-# Mock Contact List - In production, this would come from a DB or LDAP
-CONTACT_LIST = {
-    "ivan": "ivan@example.com",
-    "kevin": "kevin@example.com",
-    "david": "david103132881@gmail.com", 
-    "cindy": "cindy@example.com",
-    "alice": "alice@example.com",
-    "bob": "bob@example.com"
-}
+from sqlalchemy import text
+from app.database import SessionLocal
 
 def get_email_by_name(name: str) -> str:
-    """Resolves a name to an email address."""
-    name_lower = name.lower().strip()
-    return CONTACT_LIST.get(name_lower, name)  # Return original if not found (assume it's an email)
+    """
+    Resolves a name to an email address using fuzzy matching.
+    
+    This function uses PostgreSQL's pg_trgm extension to find the most similar
+    contact name, allowing for typos and small variations.
+    
+    Args:
+        name: The person's name (can have typos)
+        
+    Returns:
+        - The email address if a match is found (similarity >= 0.3)
+        - The original input if it looks like an email (contains '@')
+        - The original input if no match is found
+        
+    Examples:
+        - "david" -> "david103132881@gmail.com"
+        - "davd" (typo) -> "david103132881@gmail.com"
+        - "kevin@example.com" -> "kevin@example.com" (pass-through)
+    """
+    name_stripped = name.strip()
+    
+    # If input looks like an email, return as-is
+    if '@' in name_stripped:
+        return name_stripped
+    
+    db = SessionLocal()
+    try:
+        # Use PostgreSQL trigram similarity for fuzzy matching
+        # similarity() returns a score between 0 and 1
+        # We order by similarity DESC and take the best match
+        # Threshold of 0.2 works better for short names (3-5 chars)
+        query = text("""
+            SELECT email, name, similarity(LOWER(name), LOWER(:input_name)) as score
+            FROM contacts
+            WHERE is_active = 1
+              AND similarity(LOWER(name), LOWER(:input_name)) > 0.2
+            ORDER BY score DESC
+            LIMIT 1
+        """)
+        
+        result = db.execute(query, {"input_name": name_stripped}).fetchone()
+        
+        if result:
+            email, matched_name, score = result
+            print(f"DEBUG: Fuzzy matched '{name_stripped}' -> '{matched_name}' (email: {email}, score: {score:.2f})")
+            return email
+        else:
+            print(f"DEBUG: No match found for '{name_stripped}', returning as-is")
+            return name_stripped  # Return original if no match
+            
+    except Exception as e:
+        print(f"ERROR: Failed to query contacts: {e}")
+        return name_stripped  # Fallback to original input
+    finally:
+        db.close()
+
 
 
 def check_availability(
     time_min: str, 
     time_max: str, 
-    emails: List[str]
+    emails: List[str],
+    add_to_channel: bool = False,
+    channel_id: Optional[str] = None,
+    discord_user_name: Optional[str] = None,
+    create_event: bool = False,
+    event_summary: Optional[str] = None,
+    event_description: Optional[str] = None
 ):
     """
-    Checks if a person is free at a specific time AND finds the next available slot within 2 days.
+    Checks availability and optionally performs actions if the person is free.
     
-    This tool always returns BOTH:
-    1. Current availability (true/false) for the requested time range
-    2. Next free slot within 2 days (with start time, end time, and duration)
-    
-    Use this for ANY availability-related query:
-    - "Is David free now?" → Returns current status + next slot
-    - "When is David free?" → Returns current status + next slot
-    - "Find a time to meet with David" → Returns current status + next slot
+    This tool creates a seamless flow:
+    1. Check if the person is available
+    2. IF AVAILABLE:
+       - Can automatically add them to a Discord channel (set add_to_channel=True)
+       - Can automatically create a calendar event (set create_event=True)
+    3. Returns availability status + result of actions taken
     
     Args:
-        time_min: Start time in ISO format (e.g., '2023-10-27T09:00:00Z').
-        time_max: End time in ISO format (e.g., '2023-10-27T17:00:00Z').
-        emails: A list of email addresses OR names (e.g. ["Ivan", "kevin@example.com"]).
-    
-    Returns:
-        {
-            "available": true/false,
-            "next_free_slot": {
-                "start": "ISO timestamp",
-                "end": "ISO timestamp",
-                "duration_minutes": 60
-            }
-        }
+        time_min: Start time in ISO format
+        time_max: End time in ISO format
+        emails: List of emails or names
+        add_to_channel: If True, add to Discord channel when available
+        channel_id: Discord Channel ID as a STRING (required if add_to_channel is True)
+        discord_user_name: Name to find Discord ID (defaults to name from emails)
+        create_event: If True, create calendar event when available
+        event_summary: Title of event (required if create_event is True)
+        event_description: Description of event
     """
     resolved_emails = [get_email_by_name(e) for e in emails]
     
-    return _call_n8n("check_availability", {
+    # Basic payload
+    payload = {
         "timeMin": time_min,
         "timeMax": time_max,
         "items": resolved_emails
-    })
+    }
+    
+    # Add conditional actions to payload
+    if add_to_channel:
+        payload["add_to_channel"] = True
+        if channel_id:
+            payload["channel_id"] = str(channel_id)  # Convert to string to prevent loss of precision in JS/n8n
+        
+        # Resolve Discord ID locally
+        target_name = None
+        if discord_user_name:
+            target_name = discord_user_name
+        elif emails:
+            # Simple heuristic: use the first person's name derived from email if not provided
+            target_name = emails[0].split('@')[0]
+            
+        if target_name:
+            payload["name"] = target_name
+            # Try to resolve ID
+            from app.tools.discord import get_discord_id_by_name
+            resolved_discord_id = get_discord_id_by_name(target_name)
+            if resolved_discord_id:
+                payload["discord_id"] = resolved_discord_id
+                print(f"DEBUG: Resolved discord_id {resolved_discord_id} for {target_name}")
+            else:
+                print(f"DEBUG: Could not resolve discord_id for {target_name}")
+
+    if create_event:
+        payload["create_event"] = True
+        payload["event_details"] = {
+            "summary": event_summary or "Meeting",
+            "description": event_description or "",
+            "start": {"dateTime": time_min},
+            "end": {"dateTime": time_max},
+            "attendees": [{"email": e} for e in resolved_emails]
+        }
+    
+    
+    return _call_n8n("check_availability", payload)
 
 def find_available_slots(
     time_min: str, 
     time_max: str, 
-    emails: List[str]
+    emails: List[str],
+    add_to_channel: bool = False,
+    channel_id: Optional[str] = None,
+    discord_user_name: Optional[str] = None,
+    create_event: bool = False,
+    event_summary: Optional[str] = None,
+    event_description: Optional[str] = None
 ):
     """
     Alias for check_availability - finds when a person is available.
@@ -157,22 +248,28 @@ def find_available_slots(
     It returns BOTH current availability status AND next free slot within 2 days.
     
     Args:
-        time_min: Start availability search range (e.g., '2023-10-27T09:00:00Z').
-        time_max: End availability search range.
-        emails: A list of email addresses OR names.
-    
-    Returns:
-        {
-            "available": true/false,
-            "next_free_slot": {
-                "start": "ISO timestamp",
-                "end": "ISO timestamp",
-                "duration_minutes": 60
-            }
-        }
+        time_min: Start availability search range
+        time_max: End availability search range
+        emails: A list of email addresses OR names
+        add_to_channel: If True, add to Discord channel when available
+        channel_id: Discord Channel ID as a STRING (required if add_to_channel is True)
+        discord_user_name: Name to find Discord ID (defaults to name from emails)
+        create_event: If True, create calendar event when available
+        event_summary: Title of event (required if create_event is True)
+        event_description: Description of event
     """
     # Just call check_availability - they now do the same thing
-    return check_availability(time_min, time_max, emails)
+    return check_availability(
+        time_min, 
+        time_max, 
+        emails, 
+        add_to_channel, 
+        channel_id, 
+        discord_user_name, 
+        create_event, 
+        event_summary, 
+        event_description
+    )
 
 def create_event(
     summary: str, 

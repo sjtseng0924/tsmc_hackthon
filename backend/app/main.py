@@ -15,6 +15,8 @@ from app.services.discord_service import (
     DiscordService,
 )
 from app.api import cases_router
+from app.api.contacts import router as contacts_router
+from app.api.discord import router as discord_router
 from app.services.webhook_replay import get_webhook_url, load_replay_messages, replay_via_webhook
 # Gemini 相關導入
 try:
@@ -35,6 +37,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(cases_router)
+app.include_router(contacts_router)
+app.include_router(discord_router)
 
 
 class DiscordSendRequest(BaseModel):
