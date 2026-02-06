@@ -9,19 +9,17 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      - cloudsql-proxy
 
-  db:
-    image: pgvector/pgvector:pg16
+  cloudsql-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
+    command: >
+      --address 0.0.0.0
+      --port 5432
+      --credentials-file /secrets/service-account-key.json
+      ${CLOUDSQL_CONNECTION_NAME}
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-
-volumes:
-  postgres-data:
+      - ./service-account-key.json:/secrets/service-account-key.json:ro
