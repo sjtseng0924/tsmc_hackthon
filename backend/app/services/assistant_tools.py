@@ -62,10 +62,20 @@ def submit_incident_report(
         hidden_risks: List of {title, content, link} or structured risk objects
     """
     _emit_progress(f"正在將結案報告存入資料庫: {title}")
+
+    normalized_severity = (severity or "").strip()
+    if normalized_severity.upper() == "P0":
+        normalized_severity = "critical"
+    elif normalized_severity.upper() == "P1":
+        normalized_severity = "high"
+    elif normalized_severity.upper() == "P2":
+        normalized_severity = "medium"
+    elif normalized_severity.upper() == "P3":
+        normalized_severity = "low"
     
     data = {
         "title": title,
-        "severity": severity,
+        "severity": normalized_severity,
         "root_cause": root_cause,
         "timeline": timeline,
         "solution": solution,
