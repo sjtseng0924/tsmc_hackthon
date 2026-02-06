@@ -1,0 +1,38 @@
+[
+  {
+    "timestamp": "2023-12-20T15:15:30Z",
+    "user": "Cindy",
+    "role": "PM",
+    "message": "@here @Kevin @David 緊急！所有使用者都回報網站連不上，看到的是『503 Service Unavailable』！整個服務都掛了！"
+  },
+  {
+    "timestamp": "2023-12-20T15:16:10Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "503？這代表後端服務本身可能都掛了。David，馬上查後端日誌，看看服務為什麼會崩潰！"
+  },
+  {
+    "timestamp": "2023-12-20T15:17:45Z",
+    "user": "David",
+    "role": "Engineer",
+    "message": "我正在看日誌，但情況很混亂。看起來像是系統性的雪崩，但我找不到最初的觸發點。"
+  },
+  {
+    "timestamp": "2023-12-20T15:18:50Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "這麼多不同的錯誤同時出現... 這不像是一個單純的程式碼 bug。感覺是更底層的資源問題。CPU？記憶體？對了，等Ivan有空也拉他進來。"
+  },
+  {
+    "timestamp": "2023-12-20T15:20:22Z",
+    "user": "David",
+    "role": "Engineer",
+    "message": "我用 `top` 看了，崩潰前的 CPU 和記憶體使用率看起來都在正常範圍。這就更奇怪了。所有症狀都指向資源耗盡，但最明顯的兩個指標卻是正常的。"
+  },
+  {
+    "timestamp": "2023-12-20T15:22:00Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "我們不能再像無頭蒼蠅一樣亂猜了。我們唯一的線索就是這份記錄了系統死亡過程的日誌。人類的眼睛在壓力下很難從這麼多混亂的錯誤中找到根源。"
+  }
+]
