@@ -1,6 +1,5 @@
 # gemini.py
 import json
-import math
 import logging
 from typing import Optional
 
@@ -20,7 +19,7 @@ from app.services.assistant_tools import (
     submit_incident_report,
     # Don't import scheduler tools from here - use direct import below
 )
-from app.services.rag import retrieve_knowledge, get_embedding
+from app.services.rag import retrieve_knowledge
 from app.tools.calendar import (
     list_events, 
     create_event, 
@@ -44,6 +43,7 @@ _summary_all_agent = None
 _solution_agent = None
 _future_agent = None
 _calendar_agent = None
+_intent_agent = None
 
 SYSTEM_INSTRUCTION = (
     "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
@@ -68,7 +68,7 @@ def _build_agent(tools):
 
 
 def init_models():
-    global _summary_agent, _summary_all_agent, _solution_agent, _future_agent, _calendar_agent
+    global _summary_agent, _summary_all_agent, _solution_agent, _future_agent, _calendar_agent, _intent_agent
     
     # Force reinitialization every time to avoid tool binding issues
     # if (
@@ -130,6 +130,7 @@ def init_models():
     _solution_agent = _build_agent(solution_tools)
     _calendar_agent = _build_agent(calendar_tools)
     _future_agent = _build_agent(future_tools)
+    _intent_agent = _build_agent([])
 
 
 def _detect_intent(user_message: str) -> str:
@@ -151,86 +152,55 @@ def _detect_intent(user_message: str) -> str:
     return "unknown"
 
 
-def _semantic_intent_fallback(text: str) -> Optional[str]:
-    cleaned = (text or "").strip()
-    if len(cleaned) < 2:
-        return None
 
-    # Representative phrases per intent for semantic matching
-    intent_examples = {
-        "summary_all": [
-            "請產出事故結案報告",
-            "需要完整的 post-mortem",
-            "整理這次事故的結案文件",
-            "輸出完整結案報告",
-            "生成結案報告草稿",
-        ],
-        "calendar": [
-            "幫我安排會議",
-            "幫我看一下這週的空檔",
-            "幫我查日曆有沒有空",
-            "把人加進 Discord 頻道",
-            "幫我約檢討會",
-        ],
-        "summary_problem": [
-            "請統整報案問題與影響範圍",
-            "幫我摘要目前問題描述",
-            "整理出報案問題",
-            "整理影響範圍",
-            "歸納使用者描述的問題",
-        ],
-        "future_improve": [
-            "提出未來改進建議",
-            "怎麼預防再次發生",
-            "提供改善與預防措施",
-            "提出後續優化方向",
-            "建議可行的改進方法",
-        ],
-        "solution": [
-            "請協助解決這個問題",
-            "給我修復建議",
-            "幫我找出根因並提出解法",
-            "針對問題給出處理方法",
-            "如何排除這個錯誤",
-        ],
-    }
+def _semantic_intent_fallback(user_message: str) -> Optional[str]:
+    if not user_message or not user_message.strip():
+        return None
+    if _intent_agent is None:
+        init_agent_vertex()
+
+    allowed_modes = {"summary_all", "summary_problem", "calendar", "future_improve", "solution"}
+    intent_prompt = (
+        "你是意圖分類器。請根據使用者輸入，從以下模式中選一個最適合的：\n"
+        "- summary_all: 要求結案報告 / post-mortem\n"
+        "- summary_problem: 要求統整報案問題與影響範圍\n"
+        "- calendar: 查詢或安排日曆、會議、加人進 Discord 頻道、私訊或排程邀請\n"
+        "- future_improve: 要求如何改善、預防、未來改進\n"
+        "- solution: 問題排查、修復、處理、解法\n\n"
+        "規則：\n"
+        "1. 只能輸出單一模式字串，不要任何額外文字。\n"
+        "2. 若完全沒有對應，請輸出 unknown。\n"
+        "3. 否則輸出最相近的模式。\n\n"
+        f"使用者輸入：{user_message}"
+    )
 
     try:
-        query_vec = get_embedding(cleaned)
-    except Exception:
+        init_agent_vertex()
+        response = _intent_agent.query(
+            input={"messages": [("user", intent_prompt)]},
+            config={"recursion_limit": 20},
+        )
+    except Exception as e:
+        logger.warning(f"semantic_intent_fallback failed: {e}")
         return None
 
-    def _cosine_similarity(a: list[float], b: list[float]) -> float:
-        if not a or not b or len(a) != len(b):
-            return 0.0
-        dot = sum(x * y for x, y in zip(a, b))
-        norm_a = math.sqrt(sum(x * x for x in a))
-        norm_b = math.sqrt(sum(y * y for y in b))
-        if norm_a == 0.0 or norm_b == 0.0:
-            return 0.0
-        return dot / (norm_a * norm_b)
+    mode_text = ""
+    if isinstance(response, str):
+        mode_text = response.strip().lower()
+    elif isinstance(response, dict) and "messages" in response:
+        for msg in reversed(response["messages"]):
+            if msg.get("kwargs", {}).get("type") == "ai":
+                mode_text = (msg.get("kwargs", {}).get("content") or "").strip().lower()
+                if mode_text:
+                    break
+    else:
+        mode_text = str(response).strip().lower()
 
-    best_intent = None
-    best_score = 0.0
-    for intent, examples in intent_examples.items():
-        for example in examples:
-            try:
-                example_vec = get_embedding(example)
-            except Exception:
-                continue
-            score = _cosine_similarity(query_vec, example_vec)
-            if score > best_score:
-                best_score = score
-                best_intent = intent
-
-    logger.info(
-        "semantic_intent best_score=%.4f best_intent=%s",
-        best_score,
-        best_intent,
-    )
-    if best_score < 0.75:
+    mode_text = mode_text.strip("` \n\r\t\"'")
+    if not mode_text:
         return None
-    return best_intent
+    mode_text = mode_text.split()[0]
+    return mode_text if mode_text in allowed_modes else "unknown"
 
 
 def _history_to_text(history: Optional[list[dict]]) -> str:
