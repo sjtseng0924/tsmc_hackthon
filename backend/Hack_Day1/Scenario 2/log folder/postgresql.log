@@ -1,0 +1,71 @@
+2023-12-20 14:30:15.112 UTC [1532] LOG:  connection received: host=tnote-app-1 [172.16.1.12] port=54321
+2023-12-20 14:30:15.118 UTC [1532] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 14:30:25.451 UTC [1533] LOG:  connection received: host=tnote-app-2 [172.16.1.13] port=34567
+2023-12-20 14:30:25.459 UTC [1533] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 14:31:12.998 UTC [1532] LOG:  disconnection: session time: 0:00:57.886 user=tnot_app host=172.16.1.12
+2023-12-20 14:32:20.101 UTC [889] LOG:  autovacuum launcher started
+2023-12-20 14:33:01.210 UTC [1533] LOG:  disconnection: session time: 0:02:35.751 user=tnot_app host=172.16.1.13
+2023-12-20 14:33:45.912 UTC [1540] LOG:  connection received: host=tnote-app-4 [172.16.1.15] port=41234
+2023-12-20 14:33:45.918 UTC [1540] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 14:34:30.313 UTC [1541] LOG:  connection received: host=tnote-app-1 [172.16.1.12] port=54322
+2023-12-20 14:34:30.319 UTC [1541] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 14:35:11.876 UTC [1540] LOG:  disconnection: session time: 0:01:25.964 user=tnot_app host=172.16.1.15
+2023-12-20 14:36:50.123 UTC [1541] LOG:  disconnection: session time: 0:02:19.804 user=tnot_app host=172.16.1.12
+2023-12-20 14:37:33.567 UTC [1555] LOG:  connection received: host=tnote-app-1 [172.16.1.12] port=54323
+2023-12-20 14:37:33.573 UTC [1555] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 14:38:15.982 UTC [1556] LOG:  connection received: host=chatbot-app-1 [172.16.5.50] port=41235
+2023-12-20 14:38:15.988 UTC [1556] LOG:  connection authorized: user=chatbot_user database=chatbot_prod
+2023-12-20 14:39:02.432 UTC [1555] LOG:  disconnection: session time: 0:01:28.859 user=tnot_app host=172.16.1.12
+2023-12-20 14:40:00.501 UTC [889] LOG:  checkpoint starting: time
+2023-12-20 14:40:08.234 UTC [889] LOG:  checkpoint complete: wrote 812 buffers (5.0%)
+2023-12-20 14:40:25.765 UTC [1556] LOG:  disconnection: session time: 0:02:09.777 user=chatbot_user host=172.16.5.50
+2023-12-20 14:41:09.212 UTC [1601] LOG:  connection received: host=rag-worker-1 [172.16.6.60] port=48765
+2023-12-20 14:41:09.218 UTC [1601] LOG:  connection authorized: user=rag_user database=rag_prod
+2023-12-20 14:41:51.888 UTC [1602] LOG:  connection received: host=tnote-app-2 [172.16.1.13] port=34568
+2023-12-20 14:41:51.894 UTC [1602] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 14:42:30.615 UTC [2105] LOG:  duration: 610.150 ms  statement: SELECT * FROM notes_access WHERE ...
+2023-12-20 14:43:18.111 UTC [1601] LOG:  disconnection: session time: 0:02:08.899 user=rag_user host=172.16.6.60
+2023-12-20 14:44:00.345 UTC [1602] LOG:  disconnection: session time: 0:02:08.451 user=tnot_app host=172.16.1.13
+2023-12-20 14:45:55.999 UTC [1610] LOG:  connection received: host=chatbot-app-2 [172.16.5.51] port=41236
+2023-12-20 14:45:55.999 UTC [1610] LOG:  connection authorized: user=chatbot_user database=chatbot_prod
+2023-12-20 14:46:31.123 UTC [1611] LOG:  connection received: host=tnote-app-1 [172.16.1.12] port=54324
+2023-12-20 14:46:31.129 UTC [1611] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 14:48:01.876 UTC [1610] LOG:  disconnection: session time: 0:02:05.877 user=chatbot_user host=172.16.5.51
+2023-12-20 14:49:22.432 UTC [1611] LOG:  disconnection: session time: 0:02:51.303 user=tnot_app host=172.16.1.12
+2023-12-20 14:50:00.000 UTC [889] LOG:  autovacuum: processing database "tnot_prod"
+2023-12-20 14:51:30.567 UTC [1620] LOG:  connection received: host=rag-worker-2 [172.16.6.61] port=39876
+2023-12-20 14:51:30.573 UTC [1620] LOG:  connection authorized: user=rag_user database=rag_prod
+2023-12-20 14:52:01.982 UTC [1621] LOG:  connection received: host=tnote-app-1 [172.16.1.12] port=54325
+2023-12-20 14:52:01.988 UTC [1621] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 14:53:29.432 UTC [1620] LOG:  disconnection: session time: 0:01:58.859 user=rag_user host=172.16.6.61
+2023-12-20 14:54:10.765 UTC [1621] LOG:  disconnection: session time: 0:02:08.777 user=tnot_app host=172.16.1.12
+2023-12-20 14:55:00.811 UTC [889] LOG:  checkpoint starting: time
+2023-12-20 14:55:09.112 UTC [889] LOG:  checkpoint complete: wrote 954 buffers (5.8%)
+2023-12-20 14:56:01.212 UTC [1630] LOG:  connection received: host=chatbot-app-1 [172.16.5.50] port=48766
+2023-12-20 14:56:01.218 UTC [1630] LOG:  connection authorized: user=chatbot_user database=chatbot_prod
+2023-12-20 14:57:21.888 UTC [1631] LOG:  connection received: host=tnote-app-1 [172.16.1.12] port=54326
+2023-12-20 14:57:21.894 UTC [1631] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 14:58:03.111 UTC [1630] LOG:  disconnection: session time: 0:02:01.899 user=chatbot_user host=172.16.5.50
+2023-12-20 14:59:30.345 UTC [1631] LOG:  disconnection: session time: 0:02:08.451 user=tnot_app host=172.16.1.12
+2023-12-20 15:00:55.999 UTC [1640] LOG:  connection received: host=rag-worker-1 [172.16.6.60] port=41237
+2023-12-20 15:00:55.999 UTC [1640] LOG:  connection authorized: user=rag_user database=rag_prod
+2023-12-20 15:02:10.123 UTC [1641] LOG:  connection received: host=tnote-app-5 [172.16.1.16] port=48767
+2023-12-20 15:02:10.129 UTC [1641] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 15:02:50.876 UTC [1640] LOG:  disconnection: session time: 0:01:54.877 user=rag_user host=172.16.6.60
+2023-12-20 15:03:25.432 UTC [1641] LOG:  disconnection: session time: 0:01:15.303 user=tnot_app host=172.16.1.16
+2023-12-20 15:04:49.567 UTC [1650] LOG:  connection received: host=chatbot-app-2 [172.16.5.51] port=41238
+2023-12-20 15:04:49.573 UTC [1650] LOG:  connection authorized: user=chatbot_user database=chatbot_prod
+2023-12-20 15:05:00.811 UTC [889] LOG:  checkpoint starting: time
+2023-12-20 15:05:09.112 UTC [889] LOG:  checkpoint complete: wrote 1021 buffers (6.2%)
+2023-12-20 15:06:15.982 UTC [1651] LOG:  connection received: host=tnote-app-2 [172.16.1.13] port=34569
+2023-12-20 15:06:15.988 UTC [1651] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 15:06:30.432 UTC [1650] LOG:  disconnection: session time: 0:01:40.859 user=chatbot_user host=172.16.5.51
+2023-12-20 15:06:50.321 UTC [3112] LOG:  connection received: host=tnote-app-4 [172.16.1.15] port=49872
+2023-12-20 15:06:50.328 UTC [3112] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2023-12-20 15:06:55.765 UTC [1651] LOG:  disconnection: session time: 0:00:39.777 user=tnot_app host=172.16.1.13
+2023-12-20 15:07:05.888 UTC [3112] PANIC:  could not write to log file: No space left on device
+2023-12-20 15:07:06.001 UTC [887] LOG:  server process (PID 3112) was terminated by signal 6: Aborted
+2023-12-20 15:07:06.001 UTC [887] LOG:  terminating any other active server processes
+2023-12-20 15:07:06.105 UTC [887] HINT:  Check free disk space.
+2023-12-20 15:07:15.500 UTC [887] FATAL:  database system is shutting down due to a panic
+2023-12-20 15:07:15.912 UTC [887] LOG:  database system was shut down at 2023-12-20 15:07:15 UTC

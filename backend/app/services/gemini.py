@@ -1,8 +1,8 @@
 # gemini.py
+import logging
 import os
 import json
 from typing import Optional
-
 import vertexai
 from vertexai import agent_engines
 
@@ -19,9 +19,11 @@ from app.services.assistant_tools import (
     search_log_entries,
     search_industry_standards,
 )
-from app.services.rag import retrieve_knowledge
+from app.services.rag import retrieve_knowledge, get_embedding
 from app.tools.calendar import list_events, create_event, check_availability
+import math
 
+logger = logging.getLogger(__name__)
 
 _summary_agent = None
 _summary_all_agent = None
@@ -29,6 +31,15 @@ _solution_agent = None
 _future_agent = None
 _calendar_agent = None
 _vertex_initialized = False
+_agent_embeddings = {}
+
+AGENT_DESCRIPTIONS = {
+    "summary_all": "結案報告，事故結案，Post-Mortem Report，撰寫完整事件報告，總結整個事件的經過與處理方式",
+    "calendar": "行程查詢，日曆管理，行事曆，會議安排，查看空檔，邀請成員，確認是否有時間",
+    "summary_problem": "報案問題統整，即時狀況分析，影響範圍評估，發生了什麼問題",
+    "future_improve": "未來改進建議，預防措施，優化方案，防範再次發生，如何提升系統穩定性",
+    "solution": "解決方案，技術支援，程式碼除錯，Log分析，故障排除，修復系統問題，How to fix it"
+}
 
 
 def _init_vertex():
@@ -61,17 +72,28 @@ def _build_agent(tools):
 
 
 def init_models():
-    global _summary_agent, _summary_all_agent, _solution_agent, _future_agent, _calendar_agent
+    global _summary_agent, _summary_all_agent, _solution_agent, _future_agent, _calendar_agent, _agent_embeddings
     if (
         _summary_agent is not None
         and _summary_all_agent is not None
         and _solution_agent is not None
         and _future_agent is not None
         and _calendar_agent is not None
+        and _agent_embeddings
     ):
         return
 
     _init_vertex()
+    
+    # Initialize Agent Embeddings
+    if not _agent_embeddings:
+        logger.info("[Init] Computing agent embeddings...")
+        try:
+            for mode, desc_text in AGENT_DESCRIPTIONS.items():
+                _agent_embeddings[mode] = get_embedding(desc_text)
+            logger.info("[Init] Agent embeddings computed.")
+        except Exception as e:
+            logger.error(f"[Error] Failed to compute agent embeddings: {e}")
 
     summary_tools = []
     summary_all_tools = []
@@ -111,8 +133,21 @@ def init_models():
     _future_agent = _build_agent(future_tools)
 
 
+def _cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
+    if not vec1 or not vec2:
+        return 0.0
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+    norm_a = math.sqrt(sum(a * a for a in vec1))
+    norm_b = math.sqrt(sum(b * b for b in vec2))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot_product / (norm_a * norm_b)
+
+
 def _detect_intent(user_message: str) -> str:
     text = (user_message or "").lower()
+    
+    # 1. Keyword Matching Strategy
     if any(keyword in text for keyword in ["結案報告", "事故結案", "post-mortem", "post mortem", "結案"]):
         return "summary_all"
     if any(keyword in text for keyword in ["行程", "日曆", "行事曆", "會議", "邀請", "空檔", "有空", "可用時間"]):
@@ -123,7 +158,35 @@ def _detect_intent(user_message: str) -> str:
         return "future_improve"
     if any(keyword in text for keyword in ["怎麼解決", "如何解決", "解決", "修復", "排除", "處理"]):
         return "solution"
-    return "solution"
+
+    # 2. Semantic Similarity Strategy (RAG-like)
+    logger.info(f"[Intent] No keyword match for '{user_message}', using semantic search...")
+    try:
+        # Ensure embeddings are initialized (though init_models should be called before run_agent)
+        if not _agent_embeddings:
+             # Just in case this method is called outside run_agent or before init
+             # We won't trigger full init here to avoid side effects, just fallback
+             logger.warning("[Intent] Embeddings not ready, fallback to solution.")
+             return "solution"
+
+        user_vector = get_embedding(user_message)
+        
+        best_mode = "solution"
+        best_score = -1.0
+        
+        for mode, agent_vector in _agent_embeddings.items():
+            score = _cosine_similarity(user_vector, agent_vector)
+            logger.debug(f"[Intent Score] {mode}: {score}")
+            if score > best_score:
+                best_score = score
+                best_mode = mode
+        
+        logger.info(f"[Intent] Selected agent: {best_mode} (score={best_score:.4f})")
+        return best_mode
+
+    except Exception as e:
+        logger.error(f"[Error] Semantic intent detection failed: {e}")
+        return "solution"
 
 
 def _history_to_text(history: Optional[list[dict]]) -> str:

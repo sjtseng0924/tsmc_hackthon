@@ -1,0 +1,83 @@
+[2023-12-20T14:30:05Z] [INFO] [tNote-AppServer-1] [AuthService] User 'john.doe' logged in successfully.
+[2023-12-20T14:31:12Z] [INFO] [tNote-AppServer-3] [DocumentService] User 'jane.smith' accessed document 'doc-id-fa876c'.
+[2023-12-20T14:32:20Z] [INFO] [tNote-AppServer-5] [HealthCheck] System status: OK. DB replication lag: 2ms.
+[2023-12-20T14:33:01Z] [INFO] [tNote-AppServer-2] [UploadHandler] User 'mark.sales' successfully uploaded 'contract_v2.pdf'.
+[2023-12-20T14:33:45Z] [INFO] [tNote-AppServer-4] [SearchService] User 'cindy.pm' performed search. Query time: 78ms.
+[2023-12-20T14:34:30Z] [INFO] [tNote-AppServer-1] [AuthService] User 'anna.qa' logged in successfully.
+[2023-12-20T14:35:11Z] [INFO] [tNote-AppServer-3] [DocumentService] User 'kevin.lead' accessed document 'doc-id-gh456j'.
+[2023-12-20T14:36:03Z] [INFO] [tNote-AppServer-2] [HealthCheck] System status: OK. DB replication lag: 3ms.
+[2023-12-20T14:36:50Z] [INFO] [tNote-AppServer-5] [UploadHandler] User 'susan.hr' successfully uploaded 'onboarding_guide.docx'.
+[2023-12-20T14:37:33Z] [INFO] [tNote-AppServer-1] [SearchService] User 'david.eng' performed search. Query time: 102ms.
+[2023-12-20T14:38:15Z] [INFO] [tNote-AppServer-4] [AuthService] User 'mark.sales' logged in successfully.
+[2023-12-20T14:39:02Z] [INFO] [tNote-AppServer-2] [DocumentService] User 'cindy.pm' created new note 'N-98712'.
+[2023-12-20T14:39:48Z] [INFO] [tNote-AppServer-3] [HealthCheck] System status: OK. DB replication lag: 2ms.
+[2023-12-20T14:40:25Z] [INFO] [tNote-AppServer-1] [UploadHandler] User 'anna.qa' successfully uploaded 'test_plan_v3.xlsx'.
+[2023-12-20T14:41:09Z] [INFO] [tNote-AppServer-5] [SearchService] User 'kevin.lead' performed search. Query time: 65ms.
+[2023-12-20T14:41:51Z] [INFO] [tNote-AppServer-2] [DocumentService] User 'david.eng' accessed document 'doc-id-klm789'.
+[2023-12-20T14:42:30Z] [WARN] [tNote-AppServer-4] [DBQuery] Slow query detected on table 'notes_access'. Duration: 610ms.
+[2023-12-20T14:43:18Z] [INFO] [tNote-AppServer-1] [HealthCheck] System status: OK. DB replication lag: 4ms.
+[2023-12-20T14:44:00Z] [INFO] [tNote-AppServer-3] [AuthService] User 'cindy.pm' logged in successfully.
+[2023-12-20T14:44:42Z] [INFO] [tNote-AppServer-5] [UploadHandler] User 'mark.sales' successfully uploaded 'Q4_report.pptx'.
+[2023-12-20T14:45:10Z] [INFO] [tNote-AppServer-2] [HealthCheck] System status: OK. Disk usage on /var: 88%.
+[2023-12-20T14:45:55Z] [INFO] [tNote-AppServer-4] [SearchService] User 'anna.qa' performed search. Query time: 95ms.
+[2023-12-20T14:46:31Z] [INFO] [tNote-AppServer-1] [DocumentService] User 'susan.hr' accessed document 'doc-id-pqr321'.
+[2023-12-20T14:47:14Z] [INFO] [tNote-AppServer-3] [HealthCheck] System status: OK. DB replication lag: 2ms.
+[2023-12-20T14:48:01Z] [INFO] [tNote-AppServer-5] [AuthService] User 'david.eng' logged in successfully.
+[2023-12-20T14:48:40Z] [WARN] [tNote-AppServer-2] [HealthCheck] System status: OK. Disk usage on /var: 90%.
+[2023-12-20T14:49:22Z] [INFO] [tNote-AppServer-4] [UploadHandler] User 'cindy.pm' successfully uploaded 'meeting_notes.txt'.
+[2023-12-20T14:50:05Z] [INFO] [tNote-AppServer-4] [DocumentService] User 'kevin.lead' accessed document 'doc-id-xyz123'.
+[2023-12-20T14:50:48Z] [INFO] [tNote-AppServer-1] [DocumentService] User 'kevin.lead' accessed document 'doc-id-abc987'.
+[2023-12-20T14:51:30Z] [INFO] [tNote-AppServer-3] [SearchService] User 'mark.sales' performed search. Query time: 110ms.
+[2023-12-20T14:52:01Z] [INFO] [tNote-AppServer-1] [AuthService] User 'cindy.pm' logged in successfully.
+[2023-12-20T14:52:45Z] [INFO] [tNote-AppServer-2] [HealthCheck] System status: OK. DB replication lag: 3ms.
+[2023-12-20T14:53:29Z] [WARN] [tNote-AppServer-5] [DBConnectionPool] Connection pool 'read_replica_pool' is at 85% capacity.
+[2023-12-20T14:54:10Z] [INFO] [tNote-AppServer-1] [DocumentService] User 'anna.qa' accessed document 'doc-id-def456'.
+[2023-12-20T14:54:46Z] [INFO] [tNote-AppServer-2] [UploadHandler] User 'susan.hr' successfully uploaded 'benefits_2024.pdf'.
+[2023-12-20T14:55:22Z] [WARN] [tNote-AppServer-3] [DiskMonitor] ALERT: Disk usage on /var is at 95%.
+[2023-12-20T14:56:01Z] [INFO] [tNote-AppServer-5] [SearchService] User 'david.eng' performed search. Query time: 99ms.
+[2023-12-20T14:56:44Z] [INFO] [tNote-AppServer-3] [HealthCheck] System status: OK. DB replication lag: 2ms.
+[2023-12-20T14:57:21Z] [INFO] [tNote-AppServer-1] [AuthService] User 'kevin.lead' logged in successfully.
+[2023-12-20T14:58:03Z] [INFO] [tNote-AppServer-4] [DocumentService] User 'cindy.pm' edited note 'N-98712'.
+[2023-12-20T14:58:47Z] [INFO] [tNote-AppServer-2] [UploadHandler] User 'david.eng' successfully uploaded 'analysis.csv'.
+[2023-12-20T14:59:30Z] [INFO] [tNote-AppServer-3] [EmailService] Sent disk space warning to 'sre-team@internal.company.com'.
+[2023-12-20T15:00:18Z] [INFO] [tNote-AppServer-1] [UploadHandler] User 'cindy.pm' successfully uploaded 'roadmap.pptx'.
+[2023-12-20T15:00:55Z] [INFO] [tNote-AppServer-4] [DocumentService] User 'david.eng' accessed document 'doc-id-mno222'.
+[2023-12-20T15:01:33Z] [INFO] [tNote-AppServer-2] [HealthCheck] System status: OK. DB replication lag: 3ms.
+[2023-12-20T15:02:10Z] [INFO] [tNote-AppServer-5] [AuthService] User 'anna.qa' logged in successfully.
+[2023-12-20T15:02:50Z] [INFO] [tNote-AppServer-1] [SearchService] User 'mark.sales' performed search. Query time: 121ms.
+[2023-12-20T15:03:25Z] [INFO] [tNote-AppServer-3] [DocumentService] User 'susan.hr' created new note 'N-98713'.
+[2023-12-20T15:04:08Z] [INFO] [tNote-AppServer-2] [UploadHandler] User 'kevin.lead' successfully uploaded 'budget_v5.xlsx'.
+[2023-12-20T15:04:49Z] [INFO] [tNote-AppServer-4] [HealthCheck] System status: OK. DB replication lag: 2ms.
+[2023-12-20T15:05:30Z] [WARN] [tNote-AppServer-5] [DiskMonitor] ALERT: Disk usage on /var is at 98%. Critical threshold reached.
+[2023-12-20T15:05:55Z] [INFO] [tNote-AppServer-1] [DocumentService] User 'cindy.pm' accessed document 'doc-id-pqr321'.
+[2023-12-20T15:06:15Z] [INFO] [tNote-AppServer-2] [AuthService] User 'david.eng' logged in successfully.
+[2023-12-20T15:06:30Z] [INFO] [tNote-AppServer-3] [SearchService] User 'anna.qa' performed search. Query time: 105ms.
+[2023-12-20T15:06:45Z] [INFO] [tNote-AppServer-5] [UploadHandler] User 'mark.sales' successfully uploaded 'prospects.csv'.
+[2023-12-20T15:06:55Z] [INFO] [tNote-AppServer-4] [AuthService] User 'kevin.lead' logged in successfully.
+[2023-12-20T15:07:00Z] [WARN] [tNote-AppServer-1] [DiskMonitor] ALERT: Disk usage on /var is at 99%. IMPENDING FAILURE.
+[2023-12-20T15:07:01Z] [ERROR] [tNote-AppServer-4] [LogWriter] Failed to write to log file /var/log/tNote/audit.log. Reason: No space left on device.
+[2023-12-20T15:07:02Z] [ERROR] [tNote-AppServer-1] [CacheManager] Failed to write cache file /var/tmp/cache-item-1a2b3c.tmp. Reason: No space left on device.
+[2023-12-20T15:07:03Z] [ERROR] [tNote-AppServer-2] [LogWriter] Failed to write to log file /var/log/tNote/system.log. Reason: No space left on device.
+[2023-12-20T15:07:04Z] [ERROR] [tNote-AppServer-5] [SessionManager] Failed to create new session file in /var/lib/tNote/sessions. Reason: No space left on device.
+[2023-12-20T15:07:05Z] [ERROR] [tNote-AppServer-3] [PostgreSQL-Client] PANIC: could not write to local log file: No space left on device
+[2023-12-20T15:07:06Z] [ERROR] [tNote-AppServer-3] [PostgreSQL-Client] HINT: Check free disk space.
+[2023-12-20T15:07:08Z] [ERROR] [tNote-AppServer-1] [UploadHandler] Failed to write incoming file to temporary directory. Reason: No space left on device.
+[2023-12-20T15:07:10Z] [ERROR] [tNote-AppServer-4] [DBConnectionPool] Failed to create new connection: Cannot write to socket log. Reason: No space left on device.
+[2023-12-20T15:07:12Z] [ERROR] [tNote-AppServer-2] [AuthService] Login failed for user 'new.user'. Cannot create session. Reason: No space left on device.
+[2023-12-20T15:07:14Z] [ERROR] [tNote-AppServer-5] [CacheManager] Failed to evict old cache file. Reason: No space left on device.
+[2023-12-20T15:07:15Z] [ERROR] [tNote-AppServer-3] [PostgreSQL-Client] FATAL: database system is shutting down due to a panic
+[2023-12-20T15:07:18Z] [INFO] [tNote-AppServer-4] [Application] Received SIGTERM, shutting down...
+[2023-12-20T15:07:20Z] [CRITICAL] [tNote-AppServer-3] [ProcessManager] Main application process crashed. Unable to fork new process. Reason: Cannot allocate memory.
+[2023-12-20T15:07:22Z] [INFO] [tNote-AppServer-1] [Application] Shutdown complete.
+[2023-12-20T15:07:25Z] [CRITICAL] [tNote-AppServer-5] [HealthCheck] Application process is not responding. Service is down.
+[2023-12-20T15:07:28Z] [INFO] [tNote-AppServer-2] [Application] Shutdown complete.
+[2023-12-20T15:07:30Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.34.56, server: tnote.company.com, request: "GET /api/v1/notes", upstream: "http://172.16.1.13:8080/api/v1/notes"
+[2023-12-20T15:07:31Z] [ERROR] [tNote-Nginx-Gateway] upstream prematurely closed connection while reading response header from upstream, client: 101.12.35.67, server: tnote.company.com, request: "POST /api/v1/notes", upstream: "http://172.16.1.12:8080/api/v1/notes"
+[2023-12-20T15:07:33Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.36.78, server: tnote.company.com, request: "GET /api/v1/health", upstream: "http://172.16.1.14:8080/api/v1/health"
+[2023-12-20T15:07:35Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.37.89, server: tnote.company.com, request: "GET /api/v1/me", upstream: "http://172.16.1.15:8080/api/v1/me"
+[2023-12-20T15:07:38Z] [ERROR] [tNote-Nginx-Gateway] no live upstreams while connecting to upstream, client: 101.12.38.90, server: tnote.company.com, request: "GET /", host: "tnote.company.com"
+[2023-12-20T15:07:40Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.34.56, server: tnote.company.com, request: "GET /api/v1/notes", upstream: "http://172.16.1.13:8080/api/v1/notes"
+[2023-12-20T15:07:41Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.35.67, server: tnote.company.com, request: "POST /api/v1/notes", upstream: "http://172.16.1.12:8080/api/v1/notes"
+[2023-12-20T15:07:43Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.36.78, server: tnote.company.com, request: "GET /api/v1/health", upstream: "http://172.16.1.14:8080/api/v1/health"
+[2023-12-20T15:07:45Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.37.89, server: tnote.company.com, request: "GET /api/v1/me", upstream: "http://172.16.1.15:8080/api/v1/me"
+[2023-12-20T15:07:48Z] [ERROR] [tNote-Nginx-Gateway] no live upstreams while connecting to upstream, client: 101.12.38.90, server: tnote.company.com, request: "GET /", host: "tnote.company.com"
