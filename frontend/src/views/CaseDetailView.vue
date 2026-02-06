@@ -42,7 +42,9 @@ const formatRichText = (text) => {
     .replace(/'/g, '&#39;')
 
   const withCode = escaped.replace(/`([^`]+)`/g, '<code>$1</code>')
-  return withCode.replace(/\n/g, '<br>')
+  const withBold = withCode.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  const withItalic = withBold.replace(/\*(?!\*)(.+?)(?<!\*)\*/g, '<em>$1</em>')
+  return withItalic.replace(/\n/g, '<br>')
 }
 
 const formatToList = (text) => {

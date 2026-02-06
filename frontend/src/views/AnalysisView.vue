@@ -595,7 +595,9 @@ const pieOption = computed(() => {
   background: #e2e8f0;
   border-radius: 3px;
   outline: none;
+  appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
   margin: 12px 0;
 }
 
