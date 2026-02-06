@@ -1,8 +1,10 @@
 # gemini.py
+import os
 import json
 import logging
 from typing import Optional
 
+import vertexai
 from vertexai import agent_engines
 
 from app.config import settings
@@ -31,10 +33,6 @@ from app.tools.calendar import (
     send_direct_message,
 )
 from app.tools.discord import add_user_to_channel, search_users_with_discord
-from app.services.vertex_runtime import (
-    init_agent_vertex,
-    vertex_call_lock,
-)
 
 logger = logging.getLogger("discord-backend")
 
@@ -43,7 +41,7 @@ _summary_all_agent = None
 _solution_agent = None
 _future_agent = None
 _calendar_agent = None
-_intent_agent = None
+
 
 SYSTEM_INSTRUCTION = (
     "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
@@ -52,7 +50,20 @@ SYSTEM_INSTRUCTION = (
 
 
 def _init_vertex():
-    init_agent_vertex()
+    global _vertex_initialized
+    if _vertex_initialized:
+        return
+
+    # 設置認證
+    creds_path = settings.GOOGLE_APPLICATION_CREDENTIALS
+    if creds_path:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
+    
+    vertexai.init(
+        project=settings.VERTEX_PROJECT,
+        location=settings.VERTEX_AGENT_LOCATION,
+    )
+    _vertex_initialized = True
 
 
 def _build_agent(tools):
@@ -455,59 +466,55 @@ def run_agent(
 ) -> dict:
     init_models()
 
-    with vertex_call_lock():
-        init_agent_vertex()
+    import datetime
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        resolved_mode = mode or _detect_intent(user_message)
-        logger.info(f"run_agent intent resolved_mode={resolved_mode}")
-        
-        if resolved_mode == "unknown":
-            return {
-                "message": (
-                    "我不太確定你要的模式。你可以用更明確的指令：\n"
-                    "- 結案報告: 「請產出結案報告 / post-mortem」\n"
-                    "- 日曆/Discord: 「幫我安排會議 / 查空檔 / 把人加進頻道」\n"
-                    "- 報案問題: 「統整報案問題與影響範圍」\n"
-                    "- 未來改進: 「如何改進 / 預防措施」\n"
-                    "- 解決方案: 「如何解決 / 排除 / 修復」"
-                ),
-                "structured": None,
-                "mode": resolved_mode,
-                "confidence": 0.0,
-            }
-        history_text = _history_to_text(conversation_history)
-        summary_context = ""
-        if resolved_mode == "summary_problem":
-            summary_context = _build_summary_context(user_message)
-        if resolved_mode == "summary_all":
-            summary_context = _build_summary_all_context(user_message)
-        prompt = _build_prompt(
-            user_message,
-            resolved_mode,
-            history_text,
-            rag_context or summary_context,
-            channel_id=channel_id,
-        )
-        prompt = f"{SYSTEM_INSTRUCTION}\n\n{prompt}"
+    resolved_mode = mode or _detect_intent(user_message)
+    logger.info(f"run_agent intent resolved_mode={resolved_mode}")
+    
+    if resolved_mode == "unknown":
+        return {
+            "message": (
+                "我不太確定你要的模式。你可以用更明確的指令：\n"
+                "- 結案報告: 「請產出結案報告 / post-mortem」\n"
+                "- 日曆/Discord: 「幫我安排會議 / 查空檔 / 把人加進頻道」\n"
+                "- 報案問題: 「統整報案問題與影響範圍」\n"
+                "- 未來改進: 「如何改進 / 預防措施」\n"
+                "- 解決方案: 「如何解決 / 排除 / 修復」"
+            ),
+            "structured": None,
+            "mode": resolved_mode,
+            "confidence": 0.0,
+        }
+    history_text = _history_to_text(conversation_history)
+    summary_context = ""
+    if resolved_mode == "summary_problem":
+        summary_context = _build_summary_context(user_message)
+    if resolved_mode == "summary_all":
+        summary_context = _build_summary_all_context(user_message)
+    prompt = _build_prompt(
+        user_message,
+        resolved_mode,
+        history_text,
+        rag_context or summary_context,
+        channel_id=channel_id,
+    )
+    prompt = f"{SYSTEM_INSTRUCTION}\n\n{prompt}"
 
-        if resolved_mode == "summary_problem":
-            agent = _summary_agent
-        elif resolved_mode == "summary_all":
-            agent = _summary_all_agent
-        elif resolved_mode == "calendar":
-            agent = _calendar_agent
-        elif resolved_mode == "future_improve":
-            agent = _future_agent
-        else:
-            agent = _solution_agent
-
-        # Reset to agent context before final LLM call, because earlier
-        # intent detection or tools may have switched context for embedding.
-        init_agent_vertex()
-        response = agent.query(
-            input={"messages": [("user", prompt)]},
-            config={"recursion_limit": 60},
-        )
+    if resolved_mode == "summary_problem":
+        agent = _summary_agent
+    elif resolved_mode == "summary_all":
+        agent = _summary_all_agent
+    elif resolved_mode == "calendar":
+        agent = _calendar_agent
+    elif resolved_mode == "future_improve":
+        agent = _future_agent
+    else:
+        agent = _solution_agent
+    response = agent.query(
+        input={"messages": [("user", prompt)]},
+        config={"recursion_limit": 60},
+    )
 
     if isinstance(response, str):
         try:

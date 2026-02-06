@@ -1,18 +1,21 @@
+import os
+import vertexai
 from vertexai.language_models import TextEmbeddingModel
 from app.config import settings
 from app.database import SessionLocal
 from app.models import Knowledge, Code
-from app.services.vertex_runtime import run_with_embedding_context
 
 def get_embedding(text: str):
     """將文字轉成向量 (768維)"""
-    def _embed():
-        model = TextEmbeddingModel.from_pretrained(settings.EMBEDDING_MODEL)
-        # Force embedding size to match the pgvector column (vector(768))
-        embeddings = model.get_embeddings([text], output_dimensionality=768)
-        return embeddings[0].values
-
-    return run_with_embedding_context(_embed)
+    vertexai.init(
+        project=settings.VERTEX_PROJECT,
+        location=settings.VERTEX_EMBEDDING_LOCATION
+    )
+    
+    model = TextEmbeddingModel.from_pretrained(settings.EMBEDDING_MODEL)
+    # Force embedding size to match the pgvector column (vector(768))
+    embeddings = model.get_embeddings([text], output_dimensionality=768)
+    return embeddings[0].values
 
 def retrieve_knowledge(query: str, limit: int = 3) -> str:
     """
