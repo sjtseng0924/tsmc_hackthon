@@ -18,8 +18,6 @@ class Settings(BaseSettings):
     PORT: int = 8000
     
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
-    GOOGLE_SEARCH_API_KEY: Optional[str] = None
-    GOOGLE_SEARCH_CX: Optional[str] = None
     VERTEX_PROJECT: Optional[str] = None
     VERTEX_LOCATION: Optional[str] = "us-central1"
     

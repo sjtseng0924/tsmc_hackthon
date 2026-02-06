@@ -193,54 +193,6 @@ def search_discord_messages(query: str, limit: int = 20) -> str:
     return "\n".join(lines)
 
 
-def search_industry_standards(query: str, limit: int = 5) -> str:
-    """
-    使用 Google Custom Search 查詢業界標準/最佳實務。
-    
-    Auth: Uses API key.
-    Config: Uses GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX from settings.
-    """
-    if not query or not query.strip():
-        return "請提供要搜尋的關鍵字 (例如: CI/CD best practices, security linters)。"
-
-    _emit_progress(f"目前在看: Google Search 業界標準\n查詢: {query}")
-
-    # 1. 取得 API Key 與 CX
-    api_key = settings.GOOGLE_SEARCH_API_KEY
-    if not api_key:
-        _emit_progress("GOOGLE_SEARCH_API_KEY設定失敗")
-        return "未設定 GOOGLE_SEARCH_API_KEY，請在 .env 中設定。"
-
-    cx = settings.GOOGLE_SEARCH_CX
-    if not cx:
-        _emit_progress(f"GOOGLE_SEARCH_CX設定失敗")
-        return "未設定 GOOGLE_SEARCH_CX，請在 .env 中設定。"
-
-    # 2. 執行搜尋
-    limit = max(1, min(limit, 10))
-    try:
-        from googleapiclient.discovery import build
-        service = build("customsearch", "v1", developerKey=api_key)
-        res = service.cse().list(q=query, cx=cx, num=limit).execute()
-        
-        items = res.get("items", [])
-        if not items:
-            return "Google 搜尋沒有找到相關結果。"
-
-        lines = [f"Google 搜尋結果 (top {limit}, query={query}):"]
-        for item in items:
-            title = item.get("title") or "未命名結果"
-            link = item.get("link") or ""
-            snippet = (item.get("snippet") or "").replace("\n", " ")
-            if len(snippet) > 200:
-                snippet = snippet[:200] + "..."
-            lines.append(f"- {title}: {link} — {snippet}")
-        
-        return "\n".join(lines)
-
-    except Exception as exc:
-        return f"Google 搜尋 API 呼叫失敗: {exc}"
-
 def list_log_files(limit: int = 20) -> str:
     """
     List available log files in the database.

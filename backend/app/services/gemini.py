@@ -19,7 +19,6 @@ from app.services.assistant_tools import (
     search_code_snippets,
     search_discord_messages,
     search_log_entries,
-    search_industry_standards,
     submit_incident_report
 )
 from app.services.rag import retrieve_knowledge, get_embedding
@@ -100,7 +99,6 @@ def init_models():
     ]
 
     future_tools = [
-        search_industry_standards,
         list_log_files,
         search_log_entries,
         list_code_files,
@@ -256,8 +254,7 @@ def _build_future_prompt(user_message: str, history: str, rag_context: str) -> s
     return (
         "模式：未來改進（針對這次的問題提出對於程式碼的改進建議）\n"
         "建議先使用 Log/Code 工具查看系統內部的錯誤特徵或實作模式（搜尋 logs 或搜尋 code 找不當或可優化的寫法）\n"
-        "再用 Google Search 工具查詢該問題的業界標準/改進方案 (improvements)，若在項目中有提及，可選擇在格式中多一項 參考連結：[外部網址]\n"
-        "最後結合內部現狀與外部標準。\n"
+        "最後結合內部現狀與可查到的既有資料。\n"
         "請嚴格依照以下純文字的形式輸出，並且不要有格式限制以外的文字輸出\n\n"
         "## 之後如何避免\n"
         "- 未來預防措施\n"
@@ -265,11 +262,11 @@ def _build_future_prompt(user_message: str, history: str, rag_context: str) -> s
         "預防措施 1: (標題，是針對這次發生的問題具體可以預防的建議)\n\n"
         "內容: (清楚的提出完整的實施方法)\n"
         "負責人: (建議負責團隊，如 Infra Team, SRE Team, DevOps Team, Security Team, DBA Team)\n"
-        "參考連結: (請一定要附上找到的參考連結)\n\n"
+        "參考資料: (可填內部檔案或外部連結；若無請填 None)\n\n"
         "(請依序產出多個預防措施)\n\n"
         "- 其他隱藏的危險及優化方法\n"
         "請具體提出是因為哪個 Log 或 Code 有效率低下的寫法或錯誤用法，提出具體的潛在風險預警或優化建議\n"
-        "並在下一行一定要附上找到的參考連結\n"
+        "並在下一行附上參考資料（內部檔案或外部連結；若無請填 None）\n"
         "\n歷史對話:\n"
         f"{history}\n"
         "\n參考資料:\n"
