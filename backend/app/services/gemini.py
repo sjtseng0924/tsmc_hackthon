@@ -54,7 +54,7 @@ def _build_agent(tools):
         tools=tools,
         model_kwargs={
             "temperature": 0.2,
-            "max_output_tokens": 2048,
+            "max_output_tokens": 20000,
             "top_p": 0.95,
         },
     )
