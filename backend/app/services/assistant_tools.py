@@ -11,6 +11,83 @@ from app.database import SessionLocal
 from app.models import Code, Knowledge, LogEntry, LogFile
 from app.config import settings
 from app.services.message_service import list_recent_messages, search_messages
+from app.services.cases_service import save_case_report_structured
+
+# Updated to use cases_service.save_case_report_structured
+from app.services.cases_service import save_case_report_structured
+
+def submit_incident_report(
+    title: str,
+    severity: str,
+    root_cause: str,
+    timeline: list[str],
+    solution: str,
+    
+    # New Structured Fields
+    filename: str = None, # User-facing ID (e.g. INC-2026...)
+    report_date: str = None,
+    occurred_at: str = None,
+    resolved_at: str = None,
+    report_problem: str = None,
+    impact_service: str = None,
+    impact_user: str = None,
+    impact_data: str = None,
+    event_details: str = None,
+    inference_process: str = None,
+    preventive_measures: list[dict] = [],
+    hidden_risks: list[dict] = [], # JSON structure or List
+) -> str:
+    """
+    Submit a finalized Incident Post-Mortem report to the database.
+    
+    Args:
+        title: The title of the incident
+        severity: One of 'critical', 'high', 'medium', 'low'
+        root_cause: The fundamental cause
+        timeline: List of timestamped events (strings)
+        solution: Full solution description (Immediate + Long term)
+        
+        report_date: ISO 8601 date string (e.g. "2026-02-06T12:00:00")
+        occurred_at: When the issue started (ISO 8601)
+        resolved_at: When the issue was resolved (ISO 8601)
+        report_problem: Description of the initial report
+        impact_service: Service impact description
+        impact_user: User impact description
+        impact_data: Data impact description
+        event_details: Detailed event log analysis
+        inference_process: Reasoning steps
+        preventive_measures: List of {title, content, owner, link}
+        hidden_risks: List of {title, content, link} or structured risk objects
+    """
+    _emit_progress(f"正在將結案報告存入資料庫: {title}")
+    
+    data = {
+        "title": title,
+        "severity": severity,
+        "root_cause": root_cause,
+        "timeline": timeline,
+        "solution": solution,
+        "solution": solution,
+        
+        "filename": filename,
+        "report_date": report_date,
+        "occurred_at": occurred_at,
+        "resolved_at": resolved_at,
+        "report_problem": report_problem,
+        "impact_service": impact_service,
+        "impact_user": impact_user,
+        "impact_data": impact_data,
+        "event_details": event_details,
+        "inference_process": inference_process,
+        "preventive_measures": preventive_measures,
+        "hidden_risks": hidden_risks,
+    }
+    
+    try:
+        case_id = save_case_report_structured(data)
+        return f"報告已成功存檔。檔案名稱: {case_id}"
+    except Exception as e:
+        return f"存檔失敗: {str(e)}"
 
 
 _progress_sender: Optional[Callable[[str], None]] = None
