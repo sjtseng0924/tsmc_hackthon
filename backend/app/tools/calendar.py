@@ -284,3 +284,69 @@ def send_direct_message(user_name: str, message: str):
     """
     from app.tools.discord import send_direct_message as _send_dm
     return _send_dm(user_name, message)
+
+
+def find_best_meeting_time(channel_id: str, time_min: str, time_max: str):
+    """
+    Find the best meeting time for all members in a Discord channel.
+    
+    This function queries all channel members' Google Calendar availability
+    and returns their busy periods so the LLM can determine the optimal
+    meeting time (when most people are available).
+    
+    :param channel_id: Discord channel ID (to identify participants)
+    :param time_min: Start of time range (ISO format, e.g., "2026-02-10T00:00:00Z")
+    :param time_max: End of time range (ISO format, e.g., "2026-02-16T23:59:59Z")
+    :return: JSON with all members' busy periods for LLM analysis
+    """
+    from sqlalchemy import text
+    from app.database import SessionLocal
+    
+    # Step 1: Query DB to get all emails for users in this channel
+    # (Assumption: contacts table has channel_id or we filter by is_active)
+    # For simplicity, let's get all active contacts with email
+    db = SessionLocal()
+    try:
+        query = text("""
+            SELECT DISTINCT email
+            FROM contacts
+            WHERE is_active = 1
+              AND email IS NOT NULL
+              AND email LIKE '%@%'
+        """)
+        
+        results = db.execute(query).fetchall()
+        emails = [r.email for r in results if r.email]
+        
+        if not emails:
+           return json.dumps({
+                "error": "找不到頻道成員的 email",
+                "members": [],
+                "total_members": 0
+            })
+        
+        # Step 2: Call n8n to query all members' calendars
+        payload = {
+            "emails": emails,
+            "timeMin": time_min,
+            "timeMax": time_max
+        }
+        
+        result = _call_n8n("find_best_meeting_time", payload)
+        
+        # Parse and return
+        try:
+            data = json.loads(result) if isinstance(result, str) else result
+            return json.dumps(data, ensure_ascii=False, indent=2)
+        except:
+            return result
+            
+    except Exception as e:
+        return json.dumps({
+            "error": f"查詢失敗: {str(e)}",
+            "members": [],
+            "total_members": 0
+        })
+    finally:
+        db.close()
+

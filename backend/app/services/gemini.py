@@ -31,6 +31,7 @@ from app.tools.calendar import (
     list_scheduled_invites,
     cancel_scheduled_invite,
     send_direct_message,
+    find_best_meeting_time,
 )
 from app.tools.discord import add_user_to_channel, search_users_with_discord
 
@@ -117,6 +118,7 @@ def init_models():
         list_scheduled_invites,        # Re-enabled after fixing type hints
         cancel_scheduled_invite,       # Re-enabled after fixing type hints
         send_direct_message,           # Direct Message tool
+        find_best_meeting_time,        # Find optimal meeting time for channel members
     ]
     
     print(f"DEBUG: calendar_tools count = {len(calendar_tools)}")
@@ -433,7 +435,19 @@ def _build_calendar_prompt(user_message: str, history: str, rag_context: str, ch
         "   - 「如果他沒空就私訊跟他講一聲」\n"
         "   - 使用 `send_direct_message(user_name, message)`。\n"
         "   - 訊息範例：「Hi Kevin，原定要拉你進會議，但看你目前有行程，麻煩忙完後進頻道一下，謝謝。」\n\n"
-        "6. **事後檢討 (Post-Mortem)**：\n"
+        "6. **找最佳會議時間 (Best Meeting Time)**：\n"
+        "   - 「找這週大家都有空的時間」、「約這週最多人能參加的時間」\n"
+        "   - 使用 `find_best_meeting_time(channel_id, time_min, time_max)`。\n"
+        "   - 參數範例：\n"
+        "     - channel_id: 當前頻道 ID (從 context 取得)\n"
+        "     - time_min: \"2026-02-10T00:00:00Z\" (本週一早上)\n"
+        "     - time_max: \"2026-02-16T23:59:59Z\" (本週日晚上)\n"
+        "   - 這個工具會返回所有頻道成員的日曆忙碌時段。\n"
+        "   - **你的任務**：分析這些忙碌時段，找出：\n"
+        "     1. 所有人都有空的時段（最優先）\n"
+        "     2. 如果沒有，找最多人有空的時段\n"
+        "   - 回覆格式：「建議時間：2026-02-12 14:00-15:00，全員/80%參與」\n\n"
+        "7. **事後檢討 (Post-Mortem)**：\n"
         "   - 「約檢討會」\n"
         "   - 使用 `check_availability` 查詢並透過回傳的參數尋找空檔。\n"
         "\n歷史對話:\n"
