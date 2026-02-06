@@ -154,162 +154,75 @@ def get_email_by_name(name: str) -> str:
 def check_availability(
     time_min: str, 
     time_max: str, 
-    emails: List[str],
-    add_to_channel: bool = False,
-    channel_id: Optional[str] = None,
-    discord_user_name: Optional[str] = None,
-    create_event: bool = False,
-    event_summary: Optional[str] = None,
-    event_description: Optional[str] = None
+    emails: List[str]
 ):
     """
-    Checks availability and optionally performs actions if the person is free.
+    Check availability for a set of emails within a time range.
+    Returns availability status and the next available free slot.
     
-    This tool creates a seamless flow:
-    1. Check if the person is available
-    2. IF AVAILABLE:
-       - Can automatically add them to a Discord channel (set add_to_channel=True)
-       - Can automatically create a calendar event (set create_event=True)
-    3. Returns availability status + result of actions taken
+    This function ONLY checks availability. It does NOT create events or perform Discord actions.
     
-    Args:
-        time_min: Start time in ISO format
-        time_max: End time in ISO format
-        emails: List of emails or names
-        add_to_channel: If True, add to Discord channel when available
-        channel_id: Discord Channel ID as a STRING (required if add_to_channel is True)
-        discord_user_name: Name to find Discord ID (defaults to name from emails)
-        create_event: If True, create calendar event when available
-        event_summary: Title of event (required if create_event is True)
-        event_description: Description of event
+    :param time_min: Start time in ISO format (e.g. 2024-01-01T09:00:00Z)
+    :param time_max: End time in ISO format
+    :param emails: List of email addresses to check
     """
-    resolved_emails = [get_email_by_name(e) for e in emails]
+    from app.services.n8n import n8n_client  # Delayed import
     
-    # Basic payload
+    # Only send the inner payload, n8n_client will wrap it with action
     payload = {
         "timeMin": time_min,
         "timeMax": time_max,
-        "items": resolved_emails
+        "emails": emails
     }
-    
-    # Add conditional actions to payload
-    if add_to_channel:
-        payload["add_to_channel"] = True
-        if channel_id:
-            payload["channel_id"] = str(channel_id)  # Convert to string to prevent loss of precision in JS/n8n
-        
-        # Resolve Discord ID locally
-        target_name = None
-        if discord_user_name:
-            target_name = discord_user_name
-        elif emails:
-            # Simple heuristic: use the first person's name derived from email if not provided
-            target_name = emails[0].split('@')[0]
-            
-        if target_name:
-            payload["name"] = target_name
-            # Try to resolve ID
-            from app.tools.discord import get_discord_id_by_name
-            resolved_discord_id = get_discord_id_by_name(target_name)
-            if resolved_discord_id:
-                payload["discord_id"] = resolved_discord_id
-                print(f"DEBUG: Resolved discord_id {resolved_discord_id} for {target_name}")
-            else:
-                print(f"DEBUG: Could not resolve discord_id for {target_name}")
 
-    if create_event:
-        payload["create_event"] = True
-        payload["event_details"] = {
-            "summary": event_summary or "Meeting",
-            "description": event_description or "",
-            "start": {"dateTime": time_min},
-            "end": {"dateTime": time_max},
-            "attendees": [{"email": e} for e in resolved_emails]
-        }
-    
-    
-    return _call_n8n("check_availability", payload)
+    try:
+        response = n8n_client.call_webhook("check_availability", payload)
+        return response
+    except Exception as e:
+        return {"error": str(e)}
+
 
 def find_available_slots(
     time_min: str, 
     time_max: str, 
-    emails: List[str],
-    add_to_channel: bool = False,
-    channel_id: Optional[str] = None,
-    discord_user_name: Optional[str] = None,
-    create_event: bool = False,
-    event_summary: Optional[str] = None,
-    event_description: Optional[str] = None
+    emails: List[str]
 ):
     """
-    Alias for check_availability - finds when a person is available.
-    
-    This is identical to check_availability and exists for backward compatibility.
-    It returns BOTH current availability status AND next free slot within 2 days.
-    
-    Args:
-        time_min: Start availability search range
-        time_max: End availability search range
-        emails: A list of email addresses OR names
-        add_to_channel: If True, add to Discord channel when available
-        channel_id: Discord Channel ID as a STRING (required if add_to_channel is True)
-        discord_user_name: Name to find Discord ID (defaults to name from emails)
-        create_event: If True, create calendar event when available
-        event_summary: Title of event (required if create_event is True)
-        event_description: Description of event
+    Find available slots (Alias for check_availability).
     """
-    # Just call check_availability - they now do the same thing
-    return check_availability(
-        time_min, 
-        time_max, 
-        emails, 
-        add_to_channel, 
-        channel_id, 
-        discord_user_name, 
-        create_event, 
-        event_summary, 
-        event_description
-    )
+    return check_availability(time_min, time_max, emails)
+
 
 def create_event(
-    summary: str, 
-    start_time: str, 
-    end_time: str, 
-    attendees: List[str] = [],
-    calendar_id: str = "primary",
-    is_allday: bool = False
+    start: str,
+    end: str,
+    summary: str,
+    description: Optional[str] = None,
+    attendees: Optional[List[str]] = None
 ):
     """
-    Creates a new event and invites attendees.
+    Create a Google Calendar event.
     
-    Args:
-        summary: The title of the event.
-        start_time: Start time in ISO format (e.g. '2023-10-27T09:00:00') or date format ('2023-10-27') for all-day.
-        end_time: End time in ISO format or date format.
-        attendees: List of email addresses to invite.
-        calendar_id: The ID of the calendar to create event in.
-        is_allday: Set to True if this is an all-day event.
+    :param start: Start time in ISO format
+    :param end: End time in ISO format
+    :param summary: Event title
+    :param description: Event description
+    :param attendees: List of attendee emails
     """
-    
-    # Construct the base event dictionary
-    resolved_attendees = [get_email_by_name(a) for a in attendees]
-    event_payload = {
-        "calendarId": calendar_id,
-        "summary": summary,
-        "attendees": [{"email": email} for email in resolved_attendees]
-    }
-    
-    if is_allday:
-        # For all-day events, use 'date'. ensure we only send YYYY-MM-DD
-        # Even if the agent sends ISO with time, we strip it.
-        start_date = start_time.split('T')[0]
-        end_date = end_time.split('T')[0]
-        
-        event_payload["start"] = {"date": start_date}
-        event_payload["end"] = {"date": end_date}
-    else:
-        # Regular events use 'dateTime'
-        event_payload["start"] = {"dateTime": start_time}
-        event_payload["end"] = {"dateTime": end_time}
+    from app.services.n8n import n8n_client
 
-    return _call_n8n("create_event", event_payload)
+    payload = {
+        "start": start,
+        "end": end,
+        "summary": summary,
+        "description": description,
+        "attendees": attendees or []
+    }
+
+    try:
+        response = n8n_client.call_webhook("create_event", payload)
+        return response
+    except Exception as e:
+        return {"error": str(e)}
+    
+
