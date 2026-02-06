@@ -1,6 +1,13 @@
 :80 {
   encode gzip zstd
-  root * /srv
-  try_files {path} /index.html
-  file_server
+  
+  handle /api* {
+    reverse_proxy host.docker.internal:8080
+  }
+  
+  handle {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
 }
