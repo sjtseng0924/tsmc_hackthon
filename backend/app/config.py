@@ -20,14 +20,14 @@ class Settings(BaseSettings):
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     FRONTEND_HOST: Optional[str] = None
     VERTEX_PROJECT: Optional[str] = None
-    VERTEX_LOCATION: Optional[str] = "us-central1"
+    VERTEX_LOCATION: Optional[str] = "global"
     
     # n8n Integration
     N8N_CALENDAR_WEBHOOK_URL: Optional[str] = None
     VERTEX_EMBEDDING_LOCATION: Optional[str] = "us-central1"
     EMBEDDING_MODEL: str = "gemini-embedding-001"
-    VERTEX_AGENT_LOCATION: Optional[str] = "us-central1"
-    AGENT_MODEL: str = "gemini-2.5-pro"
+    VERTEX_AGENT_LOCATION: Optional[str] = "global"
+    AGENT_MODEL: str = "gemini-3-pro-preview"
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
