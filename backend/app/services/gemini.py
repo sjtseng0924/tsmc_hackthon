@@ -254,6 +254,12 @@ def _build_future_prompt(user_message: str, history: str, rag_context: str) -> s
     return (
         "模式：未來改進（針對這次的問題提出對於程式碼的改進建議）\n"
         "建議先使用 Log/Code 工具查看系統內部的錯誤特徵或實作模式（搜尋 logs 或搜尋 code 找不當或可優化的寫法）\n"
+        "如需外部資料，請參考以下官方或高可信來源：\n"
+        "- docs.aws.amazon.com, aws.amazon.com, cloud.google.com\n"
+        "- www.postgresql.org, www.cybertec-postgresql.com\n"
+        "- man7.org, help.ubuntu.com, wiki.ubuntu.com, www.redhat.com, access.redhat.com, www.freedesktop.org\n"
+        "- owasp.org, www.cisecurity.org, nvlpubs.nist.gov\n"
+        "- sre.google, landing.google.com/sre, netflixtechblog.com, blog.cloudflare.com\n"
         "最後結合內部現狀與可查到的既有資料。\n"
         "請嚴格依照以下純文字的形式輸出，並且不要有格式限制以外的文字輸出\n\n"
         "## 之後如何避免\n"
