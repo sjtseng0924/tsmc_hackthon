@@ -50,6 +50,10 @@ def _log_scenario_filter() -> Optional[int]:
     return mapping.get(int(_log_context_channel_id))
 
 
+def _message_scenario_filter() -> Optional[int]:
+    return _log_scenario_filter()
+
+
 
 
 def _format_timestamp(value: Optional[datetime]) -> str:
@@ -78,7 +82,8 @@ def list_recent_discord_messages(limit: int = 20) -> str:
     List recent Discord messages stored in the database.
     Use this to understand recent conversation context.
     """
-    items = list_recent_messages(limit=limit)
+    scenario_filter = _message_scenario_filter()
+    items = list_recent_messages(limit=limit, scenario=scenario_filter)
     if not items:
         return "沒有可用的 Discord 對話紀錄。"
     lines = ["最近的 Discord 對話紀錄:"]
@@ -91,7 +96,8 @@ def search_discord_messages(query: str, limit: int = 20) -> str:
     Search Discord messages by keyword.
     Use this to find relevant discussions or context.
     """
-    items = search_messages(query=query, limit=limit)
+    scenario_filter = _message_scenario_filter()
+    items = search_messages(query=query, limit=limit, scenario=scenario_filter)
     if not items:
         return "找不到相關的 Discord 對話紀錄。"
     lines = [f"Discord 對話搜尋結果 (query={query}):"]

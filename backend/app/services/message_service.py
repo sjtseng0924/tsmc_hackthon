@@ -17,6 +17,7 @@ def save_message(
     role: Optional[str],
     content: str,
     knowledge_id: Optional[int] = None,
+    scenario: Optional[int] = None,
 ) -> None:
     if not external_id or not content:
         return
@@ -32,6 +33,7 @@ def save_message(
             role=role,
             content=content,
             knowledge_id=knowledge_id,
+            scenario=scenario,
         )
         db.add(msg)
         db.commit()
@@ -42,13 +44,15 @@ def save_message(
         db.close()
 
 
-def list_recent_messages(limit: int = 20) -> list[Message]:
+def list_recent_messages(limit: int = 20, scenario: Optional[int] = None) -> list[Message]:
     limit = max(1, min(limit, 50))
     db = SessionLocal()
     try:
+        query = db.query(Message)
+        if scenario:
+            query = query.filter(Message.scenario == scenario)
         return (
-            db.query(Message)
-            .order_by(desc(Message.timestamp), desc(Message.id))
+            query.order_by(desc(Message.timestamp), desc(Message.id))
             .limit(limit)
             .all()
         )
@@ -56,23 +60,24 @@ def list_recent_messages(limit: int = 20) -> list[Message]:
         db.close()
 
 
-def search_messages(query: str, limit: int = 20) -> list[Message]:
+def search_messages(query: str, limit: int = 20, scenario: Optional[int] = None) -> list[Message]:
     limit = max(1, min(limit, 50))
     if not query:
         return []
     db = SessionLocal()
     try:
         q = f"%{query.strip().lower()}%"
-        return (
-            db.query(Message)
-            .filter(
-                or_(
-                    func.lower(Message.content).like(q),
-                    func.lower(Message.user).like(q),
-                    func.lower(Message.role).like(q),
-                )
+        query = db.query(Message).filter(
+            or_(
+                func.lower(Message.content).like(q),
+                func.lower(Message.user).like(q),
+                func.lower(Message.role).like(q),
             )
-            .order_by(desc(Message.timestamp), desc(Message.id))
+        )
+        if scenario:
+            query = query.filter(Message.scenario == scenario)
+        return (
+            query.order_by(desc(Message.timestamp), desc(Message.id))
             .limit(limit)
             .all()
         )

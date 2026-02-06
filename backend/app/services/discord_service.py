@@ -54,6 +54,16 @@ def _allowed_channel_ids() -> set[int]:
     return {int(value) for value in values if value}
 
 
+def _scenario_for_channel(channel_id: int) -> Optional[int]:
+    if settings.DISCORD_CHANNEL_ID_1 and channel_id == int(settings.DISCORD_CHANNEL_ID_1):
+        return 1
+    if settings.DISCORD_CHANNEL_ID_2 and channel_id == int(settings.DISCORD_CHANNEL_ID_2):
+        return 2
+    if settings.DISCORD_CHANNEL_ID_3 and channel_id == int(settings.DISCORD_CHANNEL_ID_3):
+        return 3
+    return None
+
+
 def _build_discord_client(intents: discord.Intents) -> discord.Client:
     return discord.Client(intents=intents)
 
@@ -131,12 +141,14 @@ class DiscordService:
             )
 
             # Persist all user messages, regardless of mention.
+            scenario = _scenario_for_channel(channel_id)
             save_message(
                 external_id=str(message.id),
                 timestamp=message.created_at,
                 user=str(message.author),
                 role="user",
                 content=message.content,
+                scenario=scenario,
             )
 
             if client.user not in message.mentions:
@@ -291,12 +303,14 @@ class DiscordService:
         for chunk in _chunk_message(content):
             bot_msg = await channel.send(chunk)
             self._append_history(channel_id, "assistant", chunk)
+            scenario = _scenario_for_channel(channel_id)
             save_message(
                 external_id=str(bot_msg.id),
                 timestamp=bot_msg.created_at,
                 user=str(client.user),
                 role="assistant",
                 content=chunk,
+                scenario=scenario,
             )
 
     def _append_history(self, channel_id: int, role: str, content: str) -> None:

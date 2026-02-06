@@ -54,6 +54,7 @@ class Message(Base):
     timestamp = Column(DateTime, nullable=True)
     user = Column(String, nullable=True)
     role = Column(String, nullable=True)
+    scenario = Column(Integer, index=True)
     content = Column(Text, nullable=False)
 
 # Code Model
