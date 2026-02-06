@@ -40,13 +40,33 @@ const formatRichText = (text) => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+
   const withCode = escaped.replace(/`([^`]+)`/g, '<code>$1</code>')
   return withCode.replace(/\n/g, '<br>')
 }
+
+const formatToList = (text) => {
+  if (!text) return []
+  return text.split('\n').map(line => line.trim()).filter(line => line.length > 0)
+}
+
+const themeStyle = computed(() => {
+  // Fixed Static Theme Color (Unified for all cases)
+  const mainColor = '#475569' // Slate-600 (Professional Grey/Blue)
+  
+  // Hex to RGB for opacity variants
+  const r = 71, g = 85, b = 105
+
+  return {
+    '--theme-color': mainColor,
+    '--theme-bg-light': `rgba(${r}, ${g}, ${b}, 0.1)`,
+    '--theme-shadow': `rgba(${r}, ${g}, ${b}, 0.2)`
+  }
+})
 </script>
 
 <template>
-  <div class="case-detail-page">
+  <div class="case-detail-page" :style="themeStyle">
     <RouterLink to="/cases" class="back-link">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
         <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
@@ -68,22 +88,22 @@ const formatRichText = (text) => {
             </span>
             <span class="badge id">{{ caseItem.filename }}</span>
           </div>
-          <div class="report-date">Report Date: {{ formatDate(caseItem.reportDate) }}</div>
+          <div class="report-date">報告日期: {{ formatDate(caseItem.reportDate) }}</div>
         </div>
         
         <h1 class="report-title">{{ caseItem.title }}</h1>
         
         <div class="time-grid">
           <div class="time-item">
-            <span class="label">Occurred At</span>
+            <span class="label">Issue 發生時間</span>
             <span class="value">{{ formatDate(caseItem.occurredAt) }}</span>
           </div>
           <div class="time-item">
-            <span class="label">Resolved At</span>
+            <span class="label">Issue 解決時間</span>
             <span class="value">{{ formatDate(caseItem.resolvedAt) }}</span>
           </div>
           <div class="time-item">
-            <span class="label">Duration</span>
+            <span class="label">持續時間</span>
             <span class="value" v-if="caseItem.occurredAt && caseItem.resolvedAt">
               {{ ((new Date(caseItem.resolvedAt) - new Date(caseItem.occurredAt)) / 3600000).toFixed(1) }} Hours
             </span>
@@ -94,46 +114,55 @@ const formatRichText = (text) => {
 
       <!-- Section 1: Problem & Impact -->
       <section class="report-section">
-        <h2 class="section-heading">Reported Problem</h2>
+        <h2 class="section-heading">報案問題</h2>
         <div class="content-block primary" v-html="formatRichText(caseItem.reportProblem)"></div>
 
-        <h3 class="sub-heading">Impact Analysis</h3>
-        <div class="impact-grid">
-          <div class="impact-card service">
-            <div class="icon">S</div>
-            <div class="title">Service Impact</div>
-            <div class="desc" v-html="formatRichText(caseItem.impactService || 'None')"></div>
-          </div>
-          <div class="impact-card user">
-            <div class="icon">U</div>
-            <div class="title">User Impact</div>
-            <div class="desc" v-html="formatRichText(caseItem.impactUser || 'None')"></div>
-          </div>
-          <div class="impact-card data">
-            <div class="icon">D</div>
-            <div class="title">Data Impact</div>
-            <div class="desc" v-html="formatRichText(caseItem.impactData || 'None')"></div>
-          </div>
+
+
+        <h2 class="section-heading">影響範圍</h2>
+        <div class="table-container">
+          <table class="impact-table">
+            <thead>
+              <tr>
+                <th width="20%">類別 (Type)</th>
+                <th>影響描述 (Description)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="impact-type">服務影響</td>
+                <td class="impact-desc" v-html="formatRichText(caseItem.impactService || 'None')"></td>
+              </tr>
+              <tr>
+                <td class="impact-type">使用者影響</td>
+                <td class="impact-desc" v-html="formatRichText(caseItem.impactUser || 'None')"></td>
+              </tr>
+              <tr>
+                <td class="impact-type">資料影響</td>
+                <td class="impact-desc" v-html="formatRichText(caseItem.impactData || 'None')"></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
       <!-- Section 2: Deep Dive -->
       <section class="report-section">
-        <h2 class="section-heading">Incident Deep Dive</h2>
+        <h2 class="section-heading">Issue 發生細節描述</h2>
         
         <div class="deep-dive-grid">
           <div class="dd-item">
-            <h3>Root Cause</h3>
+            <h3>根本原因 (Root Cause)</h3>
             <div class="content-text" v-html="formatRichText(caseItem.rootCause)"></div>
           </div>
           
           <div class="dd-item full-width" v-if="caseItem.eventDetails">
-            <h3>Event Details</h3>
+            <h3>事件發生細節 (Event Details)</h3>
             <div class="content-text" v-html="formatRichText(caseItem.eventDetails)"></div>
           </div>
 
           <div class="dd-item full-width bg-highlight" v-if="caseItem.inferenceProcess">
-             <h3>🤖 AI Inference Process</h3>
+             <h3>AI 推論過程 (AI Inference Process)</h3>
              <div class="content-text" v-html="formatRichText(caseItem.inferenceProcess)"></div>
           </div>
         </div>
@@ -141,7 +170,7 @@ const formatRichText = (text) => {
 
       <!-- Section 3: Timeline -->
       <section class="report-section">
-        <h2 class="section-heading">Timeline</h2>
+        <h2 class="section-heading">事件時間軸</h2>
         <div class="timeline-container">
           <div v-for="(event, index) in caseItem.timeline" :key="index" class="timeline-event">
             <div class="marker"></div>
@@ -152,13 +181,17 @@ const formatRichText = (text) => {
 
       <!-- Section 4: Solution -->
       <section class="report-section solution-bg">
-        <h2 class="section-heading">Solution</h2>
-        <div class="content-text large-text" v-html="formatRichText(caseItem.solution)"></div>
+        <h2 class="section-heading">解決方案</h2>
+        <ul class="solution-list">
+          <li v-for="(line, idx) in formatToList(caseItem.solution)" :key="idx" class="solution-item">
+            <span class="solution-content" v-html="formatRichText(line)"></span>
+          </li>
+        </ul>
       </section>
 
       <!-- Section 5: Prevention -->
       <section class="report-section">
-        <h2 class="section-heading">Prevention & Risks</h2>
+        <h2 class="section-heading">之後如何避免</h2>
         
         <h3 class="sub-heading" v-if="caseItem.preventiveMeasures?.length">Preventive Measures</h3>
         <div class="measures-grid" v-if="caseItem.preventiveMeasures?.length">
@@ -189,9 +222,16 @@ const formatRichText = (text) => {
 <style scoped>
 /* Page Layout */
 .case-detail-page {
+  max-width: 100%; /* Can go wider now with background */
+  min-height: 100vh;
+  padding: 40px;
+  /* Background inherited from global */
+}
+
+/* Restrict container width inside page */
+.report-container {
   max-width: 900px;
   margin: 0 auto;
-  padding-bottom: 60px;
 }
 
 .back-link {
@@ -203,8 +243,12 @@ const formatRichText = (text) => {
   text-decoration: none;
   margin-bottom: 24px;
   transition: color 0.2s;
+  max-width: 900px; /* Align with card */
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
 }
-.back-link:hover { color: #3b82f6; }
+.back-link:hover { color: var(--theme-color, #3b82f6); }
 
 .loading-state, .error-state {
   text-align: center;
@@ -226,6 +270,7 @@ const formatRichText = (text) => {
   padding: 40px;
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
+  border-top: 4px solid var(--theme-color, #3b82f6); /* Add color accent on top */
 }
 
 .header-top {
@@ -319,7 +364,7 @@ const formatRichText = (text) => {
   display: block;
   width: 6px;
   height: 24px;
-  background: #3b82f6;
+  background: var(--theme-color, #3b82f6); /* Use Theme Color */
   margin-right: 12px;
   border-radius: 3px;
 }
@@ -335,48 +380,50 @@ const formatRichText = (text) => {
   font-size: 16px;
   line-height: 1.7;
   color: #334155;
-  background: #f1f5f9;
-  padding: 24px;
-  border-radius: 12px;
+  /* Removed gray box styling */
 }
 
-/* Impact Grid */
-.impact-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-.impact-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-  background: #fff;
-}
-.impact-card .icon {
-  width: 32px;
-  height: 32px;
+/* Impact Table */
+.table-container {
+  overflow-x: auto;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-bottom: 12px;
+  border: 1px solid #e2e8f0;
+  margin-top: 24px;
 }
-.impact-card.service .icon { background: #dbeafe; color: #1e40af; }
-.impact-card.user .icon { background: #fae8ff; color: #86198f; }
-.impact-card.data .icon { background: #fee2e2; color: #991b1b; }
 
-.impact-card .title {
+.impact-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.impact-table th, .impact-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+.impact-table tr:last-child td {
+  border-bottom: none;
+}
+
+.impact-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
-  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.impact-card .desc {
+.impact-type {
+  font-weight: 600;
+  color: #1e293b;
   font-size: 14px;
-  color: #475569;
-  line-height: 1.5;
+}
+
+.impact-desc {
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 /* Deep Dive */
@@ -428,9 +475,9 @@ const formatRichText = (text) => {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--theme-color, #3b82f6); /* Use Theme Color */
   border: 2px solid #fff;
-  box-shadow: 0 0 0 2px #dbeafe;
+  box-shadow: 0 0 0 2px var(--theme-bg-light, #dbeafe); /* Use Light Shadow */
 }
 
 .timeline-event .event-content {
@@ -443,8 +490,32 @@ const formatRichText = (text) => {
 .solution-bg {
   background: #f8fafc;
 }
-.large-text {
+
+.solution-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.solution-item {
+  display: flex;
+  gap: 16px;
+  line-height: 1.6;
+  color: #334155;
   font-size: 16px;
+}
+
+.solution-item::before {
+  content: "•";
+  color: var(--theme-color, #475569); /* Theme color dot */
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1;
+  position: relative;
+  top: 2px;
+  flex-shrink: 0;
 }
 
 /* Measures */
@@ -461,7 +532,10 @@ const formatRichText = (text) => {
   padding: 20px;
   transition: transform 0.2s;
 }
-.measure-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
+.measure-card:hover { 
+  transform: translateY(-2px); 
+  border-color: var(--theme-color, #3b82f6); /* Use Theme Color */
+}
 
 .pm-header {
   display: flex;
@@ -487,7 +561,7 @@ const formatRichText = (text) => {
 }
 .pm-link {
   font-size: 13px;
-  color: #3b82f6;
+  color: var(--theme-color, #3b82f6); /* Use Theme Color */
   text-decoration: none;
   font-weight: 500;
 }

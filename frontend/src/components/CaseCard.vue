@@ -114,26 +114,26 @@ const displayDate = computed(() => {
 }
 
 .severity.critical {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: rgba(229, 83, 83, 0.1);
+  color: #E55353;
+  border: 1px solid #E55353;
 }
 
 .severity.high {
-  background: #ffedd5;
-  color: #9a3412;
-  border: 1px solid #fed7aa;
+  background: rgba(45, 52, 54, 0.1);
+  color: #2D3436;
+  border: 1px solid #2D3436;
 }
 
 .severity.medium {
-  background: #fef9c3;
-  color: #854d0e;
-  border: 1px solid #fde047;
+  background: rgba(149, 165, 166, 0.1);
+  color: #95A5A6;
+  border: 1px solid #95A5A6;
 }
 
 .severity.low {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+  background: rgba(220, 221, 225, 0.2);
+  color: #95A5A6; /* Use darker gray for text readability, DCDDE1 is background-like */
+  border: 1px solid #DCDDE1;
 }
 </style>

@@ -35,7 +35,8 @@ const error = ref('')
 
 // -- FILTERS --
 const searchTerm = ref('')
-const selectedSeverities = ref(['critical', 'high', 'medium', 'low'])
+const severityThreshold = ref(0) // 0: All, 1: Medium+, 2: High+, 3: Critical
+const selectedTeams = ref(['All']) // default select all teams
 
 // -- DATA FETCHING --
 const loadCases = async () => {
@@ -53,16 +54,69 @@ const loadCases = async () => {
 
 onMounted(loadCases)
 
+const SEVERITY_MAP = {
+  low: 0,
+  medium: 1,
+  high: 2,
+  critical: 3
+}
+
+// -- METHODS --
+const handleTeamChange = (team) => {
+  if (team === 'All') {
+    selectedTeams.value = ['All']
+    return
+  }
+  
+  // If "All" was previously selected, clear it and select this team
+  if (selectedTeams.value.includes('All')) {
+    selectedTeams.value = [team]
+    return
+  }
+
+  // Toggle selection
+  const idx = selectedTeams.value.indexOf(team)
+  if (idx > -1) {
+    selectedTeams.value.splice(idx, 1)
+  } else {
+    selectedTeams.value.push(team)
+  }
+
+  // If nothing selected, revert to All
+  if (selectedTeams.value.length === 0) {
+    selectedTeams.value = ['All']
+  }
+}
+
+// -- COMPUTED: HELPERS --
+const availableTeams = computed(() => {
+  const teams = new Set()
+  cases.value.forEach(c => {
+    if (c.preventiveMeasures) {
+      c.preventiveMeasures.forEach(pm => {
+        if (pm.owner) teams.add(pm.owner.trim())
+      })
+    }
+  })
+  return Array.from(teams).sort()
+})
+
 // -- COMPUTED: FILTERING --
 const filteredCases = computed(() => {
   const term = searchTerm.value.trim().toLowerCase()
   return cases.value.filter((item) => {
-    // 1. Severity Filter
-    if (!selectedSeverities.value.includes(item.severity.toLowerCase())) {
+    // 1. Severity Filter (Threshold)
+    const itemSevValue = SEVERITY_MAP[item.severity?.toLowerCase()] ?? 1 // default medium
+    if (itemSevValue < severityThreshold.value) {
       return false
     }
 
-    // 2. (Category removed)
+    // 2. Team Filter (Multi-select with 'All')
+    if (!selectedTeams.value.includes('All') && selectedTeams.value.length > 0) {
+      const itemTeams = item.preventiveMeasures?.map(pm => pm.owner?.trim()) || []
+      const hasMatch = itemTeams.some(t => selectedTeams.value.includes(t))
+      if (!hasMatch) return false
+    }
 
     // 3. Search Term
     if (!term) return true
@@ -73,14 +127,14 @@ const filteredCases = computed(() => {
     ]
       .join(' ')
       .toLowerCase()
-
+    
     return haystack.includes(term)
   })
 })
 
-// -- STATISTICS FOR CHARTS (Reactive to Filtered Cases) --
+// -- STATISTICS FOR CHARTS (Global Data) --
 const severityCounts = computed(() => {
-  return filteredCases.value.reduce(
+  return cases.value.reduce(
     (acc, item) => {
       const s = item.severity ? item.severity.toLowerCase() : 'medium'
       acc[s] = (acc[s] || 0) + 1
@@ -89,6 +143,41 @@ const severityCounts = computed(() => {
     { critical: 0, high: 0, medium: 0, low: 0 }
   )
 })
+
+const teamWorkload = computed(() => {
+  const counts = {} // record each team's workload
+  cases.value.forEach(item => {
+    let handled = false
+    if (item.preventiveMeasures && Array.isArray(item.preventiveMeasures)) {
+      item.preventiveMeasures.forEach(obj => {
+        const owner = obj.owner ? obj.owner.trim() : 'Unassigned' // 'QA Team / AI Team / ...'
+        counts[owner] = (counts[owner] || 0) + 1
+        // console.log(`[${item.filename}] Found owner: "${owner}". Current count:`, counts[owner])
+        handled = true
+      })
+    } 
+    
+    if (!handled) {
+      counts['Unassigned'] = (counts['Unassigned'] || 0) + 1
+    }
+  })
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1]) // Sort desc
+})
+
+// Colors
+const SEVERITY_COLORS = {
+  critical: '#E55353',
+  high: '#2D3436',
+  medium: '#95A5A6',
+  low: '#DCDDE1'
+}
+
+const TEAM_COLORS = [
+  '#D63031', '#E55353', '#FF7675', 
+  '#1E272E', '#2D3436', '#485460', 
+  '#7F8C8D', '#95A5A6', '#BDC3C7' 
+]
 
 // -- ECHARTS OPTIONS --
 
@@ -129,10 +218,10 @@ const pieOption = computed(() => {
           show: false
         },
         data: [
-          { value: severityCounts.value.critical, name: 'Critical', itemStyle: { color: '#b91c1c' } },
-          { value: severityCounts.value.high, name: 'High', itemStyle: { color: '#c2410c' } },
-          { value: severityCounts.value.medium, name: 'Medium', itemStyle: { color: '#b45309' } },
-          { value: severityCounts.value.low, name: 'Low', itemStyle: { color: '#15803d' } }
+          { value: severityCounts.value.critical, name: 'Critical', itemStyle: { color: SEVERITY_COLORS.critical } },
+          { value: severityCounts.value.high, name: 'High', itemStyle: { color: SEVERITY_COLORS.high } },
+          { value: severityCounts.value.medium, name: 'Medium', itemStyle: { color: SEVERITY_COLORS.medium } },
+          { value: severityCounts.value.low, name: 'Low', itemStyle: { color: SEVERITY_COLORS.low } }
         ]
       }
     ]
@@ -147,54 +236,107 @@ const pieOption = computed(() => {
     <section class="viz-section">
       
       <div class="viz-card">
-        <div class="card-title">Severity Distribution</div>
+        <div class="card-title">事件等級分佈</div>
         <div class="chart-container">
           <v-chart class="chart" :option="pieOption" autoresize />
+        </div>
+      </div>
+
+      <div class="viz-card">
+        <div class="card-title">Team Workload</div>
+        <div class="bar-list-container">
+          <div 
+            v-for="(item, index) in teamWorkload" 
+            :key="item[0]" 
+            class="bar-row"
+          >
+            <div class="bar-label">{{ item[0] }}</div>
+            <div class="bar-track">
+              <div 
+                class="bar-fill" 
+                :style="{ 
+                  width: `${(item[1] / (teamWorkload[0]?.[1] || 1)) * 100}%`,
+                  backgroundColor: TEAM_COLORS[index % TEAM_COLORS.length]
+                }"
+              ></div>
+              <span class="bar-count">{{ item[1] }}</span>
+            </div>
+          </div>
+          
+          <div v-if="teamWorkload.length === 0" class="no-data">
+            No active workload data
+          </div>
         </div>
       </div>
       
     </section>
 
-
-
     <!-- Bottom Section: Split Layout -->
     <section class="content-split">
-      
-      <!-- Left Sidebar: Filters -->
+      <!-- ... filters ... -->
       <aside class="filters-sidebar">
-        <div class="sidebar-header">Filters</div>
+        <!-- ... sidebar content ... -->
+        <div class="sidebar-header">搜尋特定結案報告</div>
         
         <div class="filter-group">
-          <label class="filter-label">Search</label>
+          <label class="filter-label">關鍵字搜尋</label>
           <input 
             v-model="searchTerm" 
             type="text" 
             class="search-input"
-            placeholder="Search filtered results..." 
+            placeholder="keyword" 
           />
         </div>
 
-
-
+        <!-- Severity Slider -->
         <div class="filter-group">
-          <label class="filter-label">Severity</label>
-          <div class="checkbox-list">
-            <label class="checkbox-item">
-              <input type="checkbox" value="critical" v-model="selectedSeverities" />
-              <span class="cb-label critical">Critical</span>
+          <label class="filter-label">事件等級</label>
+          <div class="slider-container">
+            <input 
+              type="range" 
+              min="0" 
+              max="3" 
+              step="1" 
+              v-model.number="severityThreshold" 
+              class="severity-slider"
+            />
+            <div class="slider-labels">
+              <span>Low</span>
+              <span>Med</span>
+              <span>High</span>
+              <span>Critical</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team Filter -->
+        <div class="filter-group">
+          <label class="filter-label">部門</label>
+          <div class="checkbox-list scrollable">
+            <!-- All Option -->
+            <label class="checkbox-item try-all">
+              <input 
+                type="checkbox" 
+                :checked="selectedTeams.includes('All')" 
+                @change="handleTeamChange('All')" 
+              />
+              <span class="cb-label-text">All (所有部門)</span>
             </label>
-            <label class="checkbox-item">
-              <input type="checkbox" value="high" v-model="selectedSeverities" />
-              <span class="cb-label high">High</span>
+
+            <!-- Loop Option -->
+            <label v-for="team in availableTeams" :key="team" class="checkbox-item">
+              <input 
+                type="checkbox" 
+                :value="team" 
+                :checked="selectedTeams.includes(team)" 
+                @change="handleTeamChange(team)" 
+              />
+              <span class="cb-label-text">{{ team }}</span>
             </label>
-            <label class="checkbox-item">
-              <input type="checkbox" value="medium" v-model="selectedSeverities" />
-              <span class="cb-label medium">Medium</span>
-            </label>
-            <label class="checkbox-item">
-              <input type="checkbox" value="low" v-model="selectedSeverities" />
-              <span class="cb-label low">Low</span>
-            </label>
+            
+            <div v-if="availableTeams.length === 0" class="no-options">
+              No teams found
+            </div>
           </div>
         </div>
         
@@ -229,7 +371,9 @@ const pieOption = computed(() => {
 
 /* Visualization Section */
 .viz-section {
-  display: block;
+  display: grid;
+  grid-template-columns: 3fr 7fr;
+  gap: 24px;
 }
 
 .viz-card {
@@ -263,6 +407,61 @@ const pieOption = computed(() => {
 .chart {
   height: 100%;
   width: 100%;
+}
+
+/* HTML Bar Chart Styles */
+.bar-list-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar-label {
+  width: 140px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.bar-track {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px 12px 12px 4px; /* Rounded right */
+  transition: width 0.5s ease-out;
+  min-width: 4px;
+}
+
+.bar-count {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.no-data {
+  text-align: center;
+  color: #94a3b8;
+  margin-top: 40px;
 }
 
 @media (max-width: 1024px) {
@@ -346,10 +545,78 @@ const pieOption = computed(() => {
   color: #334155;
 }
 
-.cb-label.critical { color: #b91c1c; }
-.cb-label.high { color: #c2410c; }
-.cb-label.medium { color: #b45309; }
-.cb-label.low { color: #15803d; }
+.cb-label.critical { color: #E55353; }
+.cb-label.high { color: #2D3436; }
+.cb-label.medium { color: #95A5A6; }
+.cb-label.low { color: #DCDDE1; }
+
+
+/* Scrollable Checkbox List */
+.checkbox-list.scrollable {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #334155;
+  padding: 4px 0;
+}
+
+.cb-label-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.no-options {
+  font-size: 13px;
+  color: #94a3b8;
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* Slider Styles */
+.slider-container {
+  padding: 0 4px;
+}
+
+.severity-slider {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  margin: 12px 0;
+}
+
+.severity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: -4px;
+}
 
 .results-count {
   margin-top: 20px;
