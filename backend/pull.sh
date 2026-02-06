@@ -8,11 +8,10 @@ sudo docker pull "$IMG"
 
 sudo docker rm -f "$NAME" >/dev/null 2>&1 || true
 
-# 直接跑新的
 sudo docker run -d \
   --name "$NAME" \
   --restart unless-stopped \
-  -p 8000:8000 \
+  -p 80:8000 \
   "$IMG"
 
 sudo docker ps --filter "name=$NAME"
