@@ -157,22 +157,36 @@ def check_availability(
     emails: List[str]
 ):
     """
-    Check availability for a set of emails within a time range.
+    Check availability for a set of people within a time range.
     Returns availability status and the next available free slot.
     
     This function ONLY checks availability. It does NOT create events or perform Discord actions.
     
+    **Important:** This function accepts either names or email addresses.
+    - If you pass a name (e.g., "Kevin"), it will automatically look up the email from the contacts database.
+    - If you pass an email (e.g., "kevin@example.com"), it will use it directly.
+    
     :param time_min: Start time in ISO format (e.g. 2024-01-01T09:00:00Z)
     :param time_max: End time in ISO format
-    :param emails: List of email addresses to check
+    :param emails: List of names or email addresses to check (names will be converted to emails automatically)
+    
+    Example:
+        check_availability("2024-01-01T09:00:00Z", "2024-01-01T17:00:00Z", ["Kevin", "David"])
     """
     from app.services.n8n import n8n_client  # Delayed import
+    
+    # Convert all names to emails using get_email_by_name
+    resolved_emails = []
+    for name_or_email in emails:
+        email = get_email_by_name(name_or_email)
+        resolved_emails.append(email)
+        print(f"DEBUG: Resolved '{name_or_email}' -> '{email}'")
     
     # Only send the inner payload, n8n_client will wrap it with action
     payload = {
         "timeMin": time_min,
         "timeMax": time_max,
-        "emails": emails
+        "emails": resolved_emails  # Use resolved emails instead of raw input
     }
 
     try:
@@ -226,3 +240,47 @@ def create_event(
         return {"error": str(e)}
     
 
+# ===== Scheduler Tools (Simplified Wrappers) =====
+
+def schedule_discord_invite(user_name: str, channel_id: str, notification_message: str = ""):
+    """
+    Schedule a Discord invite when the user becomes available.
+    
+    :param user_name: User name to invite
+    :param channel_id: Discord channel ID  
+    :param notification_message: Optional notification message
+    """
+    from app.tools.scheduler import schedule_invite_when_available
+    return schedule_invite_when_available(user_name, channel_id, notification_message or None)
+
+
+def list_scheduled_invites(status: str = "", limit: int = 20):
+    """
+    List scheduled invite tasks.
+    
+    :param status: Filter by status (pending/completed/failed)
+    :param limit: Maximum number of results
+    """
+    from app.tools.scheduler import list_scheduled_tasks
+    return list_scheduled_tasks(status=status or None, limit=limit)
+
+
+def cancel_scheduled_invite(task_id: int):
+    """
+    Cancel a scheduled invite task.
+    
+    :param task_id: Task ID to cancel
+    """
+    from app.tools.scheduler import cancel_scheduled_task
+    return cancel_scheduled_task(task_id=task_id)
+
+
+def send_direct_message(user_name: str, message: str):
+    """
+    Send a Direct Message (DM) to a user via Discord.
+    
+    :param user_name: User name (fuzzy matched)
+    :param message: Message content
+    """
+    from app.tools.discord import send_direct_message as _send_dm
+    return _send_dm(user_name, message)

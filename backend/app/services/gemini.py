@@ -19,10 +19,20 @@ from app.services.assistant_tools import (
     search_code_snippets,
     search_discord_messages,
     search_log_entries,
-    submit_incident_report
+    submit_incident_report,
+    # Don't import scheduler tools from here - use direct import below
 )
 from app.services.rag import retrieve_knowledge, get_embedding
-from app.tools.calendar import list_events, create_event, check_availability, find_available_slots
+from app.tools.calendar import (
+    list_events, 
+    create_event, 
+    check_availability, 
+    find_available_slots,
+    schedule_discord_invite,
+    list_scheduled_invites,
+    cancel_scheduled_invite,
+    send_direct_message,
+)
 from app.tools.discord import add_user_to_channel, search_users_with_discord
 
 logger = logging.getLogger("discord-backend")
@@ -72,15 +82,15 @@ def _build_agent(tools):
 def init_models():
     global _summary_agent, _summary_all_agent, _solution_agent, _future_agent, _calendar_agent
     
-    # Check if already initialized
-    if (
-        _summary_agent is not None
-        and _summary_all_agent is not None
-        and _solution_agent is not None
-        and _future_agent is not None
-        and _calendar_agent is not None
-    ):
-        return
+    # Force reinitialization every time to avoid tool binding issues
+    # if (
+    #     _summary_agent is not None
+    #     and _summary_all_agent is not None
+    #     and _solution_agent is not None
+    #     and _future_agent is not None
+    #     and _calendar_agent is not None
+    # ):
+    #     return
 
     _init_vertex()
 
@@ -96,7 +106,14 @@ def init_models():
         find_available_slots,
         add_user_to_channel,
         search_users_with_discord,
+        schedule_discord_invite,       # Re-enabled after fixing type hints
+        list_scheduled_invites,        # Re-enabled after fixing type hints
+        cancel_scheduled_invite,       # Re-enabled after fixing type hints
+        send_direct_message,           # Direct Message tool
     ]
+    
+    print(f"DEBUG: calendar_tools count = {len(calendar_tools)}")
+    print(f"DEBUG: calendar_tools = {[t.__name__ if hasattr(t, '__name__') else str(t) for t in calendar_tools]}")
 
     future_tools = [
         list_log_files,
@@ -117,6 +134,7 @@ def init_models():
         list_case_reports,
         get_case_report,
         retrieve_knowledge,
+        send_direct_message,           # Direct Message tool
     ]
 
     _summary_agent = _build_agent(summary_tools)
@@ -239,15 +257,20 @@ def _history_to_text(history: Optional[list[dict]]) -> str:
 
 
 def _build_prompt(user_message: str, mode: str, history: str, rag_context: str, channel_id: Optional[int] = None) -> str:
+    # Prepend system instruction to all prompts
+    prompt_body = ""
     if mode == "summary_all":
-        return _build_summary_all_prompt(user_message, history, rag_context)
-    if mode == "summary_problem":
-        return _build_summary_prompt(user_message, history, rag_context)
-    if mode == "calendar":
-        return _build_calendar_prompt(user_message, history, rag_context, channel_id)
-    if mode == "future_improve":
-        return _build_future_prompt(user_message, history, rag_context)
-    return _build_solution_prompt(user_message, history, rag_context)
+        prompt_body = _build_summary_all_prompt(user_message, history, rag_context)
+    elif mode == "summary_problem":
+        prompt_body = _build_summary_prompt(user_message, history, rag_context)
+    elif mode == "calendar":
+        prompt_body = _build_calendar_prompt(user_message, history, rag_context, channel_id)
+    elif mode == "future_improve":
+        prompt_body = _build_future_prompt(user_message, history, rag_context)
+    else:
+        prompt_body = _build_solution_prompt(user_message, history, rag_context)
+    
+    return f"{SYSTEM_INSTRUCTION}\n\n{prompt_body}"
 
 
 def _build_future_prompt(user_message: str, history: str, rag_context: str) -> str:
@@ -414,8 +437,20 @@ def _build_calendar_prompt(user_message: str, history: str, rag_context: str, ch
         "3. **Discord 邀請**：\n"
         "   - 「把 Kevin 加進頻道」\n"
         "   - 如果沒有特別說要看時間，可以直接呼叫 `add_user_to_channel(name, channel_id='...')`。\n"
+        "   - **重要：加人之後，必須用 `send_discord_message` 發訊息通知當事人**。\n"
+        "   - 訊息範例：「@Kevin 已將你加入頻道，有事情需要討論」\n"
         "   - 如果說「如果有空才加」，請先 Check 再 Add。\n\n"
-        "4. **事後檢討 (Post-Mortem)**：\n"
+        "4. **排程邀請 (Scheduled Invite)**：\n"
+        "   - 「等 Kevin 有空把他拉進來」\n"
+        "   - 步驟一：呼叫 `schedule_discord_invite(user_name, channel_id, notification_message)`\n"
+        "   - **重要：`notification_message` 參數必須填寫**，這會在排程執行時自動發送給當事人。\n"
+        "   - 訊息範例：「Hi Kevin，會議準備開始了，請過來一下！」\n"
+        "   - 排程完成後，回覆使用者已排程的時間。\n\n"
+        "5. **私訊通知 (Direct Message)**：\n"
+        "   - 「如果他沒空就私訊跟他講一聲」\n"
+        "   - 使用 `send_direct_message(user_name, message)`。\n"
+        "   - 訊息範例：「Hi Kevin，原定要拉你進會議，但看你目前有行程，麻煩忙完後進頻道一下，謝謝。」\n\n"
+        "6. **事後檢討 (Post-Mortem)**：\n"
         "   - 「約檢討會」\n"
         "   - 使用 `check_availability` 查詢並透過回傳的參數尋找空檔。\n"
         "\n歷史對話:\n"

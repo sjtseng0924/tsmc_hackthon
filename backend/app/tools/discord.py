@@ -177,3 +177,68 @@ def search_users_with_discord(query: str, threshold: float = 0.3):
         return f"搜尋失敗: {str(e)}"
     finally:
         db.close()
+
+
+def send_direct_message(user_name: str, message: str) -> str:
+    """
+    發送私訊 (Direct Message) 給使用者。
+    
+    用於緊急通知或在使用者忙碌時留言提醒。
+    
+    Args:
+        user_name: 使用者名稱 (支援模糊匹配)
+        message: 訊息內容
+        
+    Returns:
+        成功與否的訊息
+    """
+    # 1. 解析 Discord ID
+    discord_id = get_discord_id_by_name(user_name)
+    if not discord_id:
+        return f"錯誤：找不到用戶 '{user_name}' 的 Discord ID。"
+    
+    bot_token = settings.DISCORD_TOKEN
+    if not bot_token:
+        return "錯誤：Discord Token 未設定 (DISCORD_TOKEN)"
+
+    # 2. 建立 DM Channel
+    # Discord API: Create DM
+    # POST /users/@me/channels
+    api_base = "https://discord.com/api/v10"
+    headers = {
+        "Authorization": f"Bot {bot_token}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        # Create DM Channel
+        dm_resp = requests.post(
+            f"{api_base}/users/@me/channels",
+            headers=headers,
+            json={"recipient_id": str(discord_id)},  # 必須是 string
+            timeout=10
+        )
+        
+        if dm_resp.status_code not in (200, 201):
+            return f"建立私訊頻道失敗: {dm_resp.status_code} - {dm_resp.text}"
+            
+        dm_channel_id = dm_resp.json().get("id")
+        if not dm_channel_id:
+            return "建立私訊頻道失敗: 無法取得 Channel ID"
+            
+        # 3. 發送訊息
+        # POST /channels/{channel_id}/messages
+        msg_resp = requests.post(
+            f"{api_base}/channels/{dm_channel_id}/messages",
+            headers=headers,
+            json={"content": message},
+            timeout=10
+        )
+        
+        if msg_resp.status_code in (200, 201):
+            return f"✅ 已成功私訊 {user_name}！"
+        else:
+            return f"發送私訊失敗: {msg_resp.status_code} - {msg_resp.text}"
+
+    except Exception as e:
+        return f"發送私訊時發生錯誤: {str(e)}"

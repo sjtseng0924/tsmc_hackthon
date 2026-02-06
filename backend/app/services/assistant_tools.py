@@ -12,9 +12,11 @@ from app.models import Code, Knowledge, LogEntry, LogFile
 from app.config import settings
 from app.services.message_service import list_recent_messages, search_messages
 from app.services.cases_service import save_case_report_structured
-
-# Updated to use cases_service.save_case_report_structured
-from app.services.cases_service import save_case_report_structured
+from app.tools.scheduler import (
+    schedule_invite_when_available,
+    list_scheduled_tasks,
+    cancel_scheduled_task,
+)
 
 def submit_incident_report(
     title: str,
@@ -403,3 +405,55 @@ def get_case_report(case_id: str) -> str:
         )
     finally:
         db.close()
+
+
+# ===== Scheduler Tools =====
+# Import scheduler functions
+
+def schedule_discord_invite(
+    user_name: str,
+    channel_id: str,
+    notification_message: Optional[str] = None
+) -> str:
+    """
+    查詢使用者的最快空閒時間，並排程在該時間將使用者拉進 Discord 頻道。
+    
+    這個函數會：
+    1. 查詢使用者接下來 2 天內的最快空閒時段
+    2. 將「拉人進頻道 + 發送通知」的任務記錄到資料庫
+    3. 由 cron job 在指定時間執行任務
+    
+    Args:
+        user_name: 使用者名稱（支援模糊匹配）
+        channel_id: Discord 頻道 ID
+        notification_message: 選用的通知訊息，會在拉人進頻道時同時發送
+        
+    Example:
+        schedule_discord_invite("Kevin", "1234567890", "嗨 Kevin，會議準備開始了！")
+    """
+    _emit_progress(f"正在查詢 {user_name} 的空閒時間並排程邀請...")
+    return schedule_invite_when_available(user_name, channel_id, notification_message)
+
+
+def list_scheduled_invites(status: Optional[str] = None, limit: int = 20) -> str:
+    """
+    列出排程的邀請任務。
+    
+    Args:
+        status: 篩選狀態（'pending', 'completed', 'failed', 'cancelled'），不指定則顯示全部
+        limit: 最多顯示幾筆（預設 20）
+    """
+    _emit_progress("正在查詢排程任務清單...")
+    return list_scheduled_tasks(status=status, limit=limit)
+
+
+def cancel_scheduled_invite(task_id: int) -> str:
+    """
+    取消排程的邀請任務。
+    
+    Args:
+        task_id: 任務 ID
+    """
+    _emit_progress(f"正在取消任務 {task_id}...")
+    return cancel_scheduled_task(task_id=task_id)
+

@@ -97,3 +97,21 @@ class Contact(Base):
     is_active = Column(Integer, default=1)  # 1=active, 0=inactive
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+# Scheduled Task Model - For deferred actions (e.g., invite user when available)
+class ScheduledTask(Base):
+    __tablename__ = "scheduled_tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Task metadata
+    task_type = Column(String, nullable=False, index=True)  # 'invite_to_channel', 'send_notification', etc.
+    scheduled_time = Column(DateTime, nullable=False, index=True)  # When to execute this task
+    status = Column(String, default='pending', index=True)  # 'pending', 'completed', 'failed', 'cancelled'
+    
+    # Task payload (JSON format, flexible for different task types)
+    payload = Column(JSON, nullable=False)  # e.g., {"user_name": "Kevin", "channel_id": "123", "message": "..."}
+    
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    executed_at = Column(DateTime, nullable=True)  # When the task was actually executed
+    error_message = Column(Text, nullable=True)  # Error message if failed

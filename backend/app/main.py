@@ -17,6 +17,7 @@ from app.services.discord_service import (
 from app.api import cases_router
 from app.api.contacts import router as contacts_router
 from app.api.discord import router as discord_router
+from app.api.scheduler import router as scheduler_router
 from app.services.webhook_replay import get_webhook_url, load_replay_messages, replay_via_webhook
 # Gemini 相關導入
 try:
@@ -39,6 +40,7 @@ app.add_middleware(
 app.include_router(cases_router)
 app.include_router(contacts_router)
 app.include_router(discord_router)
+app.include_router(scheduler_router)
 
 
 class DiscordSendRequest(BaseModel):
@@ -87,16 +89,28 @@ class GeminiAgentResponse(BaseModel):
 
 @app.on_event("startup")
 async def startup_event() -> None:
+    # Start Discord service
     service = DiscordService(logger)
     await service.startup()
     app.state.discord_service = service
+    
+    # Start background scheduler for scheduled tasks
+    from app.services.background_scheduler import start_scheduler
+    start_scheduler()
+    logger.info("🚀 Application startup complete")
 
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
+    # Shutdown Discord service
     service: DiscordService = getattr(app.state, "discord_service", None)
     if service is not None:
         await service.shutdown()
+    
+    # Shutdown background scheduler
+    from app.services.background_scheduler import shutdown_scheduler
+    shutdown_scheduler()
+    logger.info("👋 Application shutdown complete")
 
 
 @app.get("/api/health")
