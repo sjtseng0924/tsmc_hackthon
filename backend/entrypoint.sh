@@ -10,7 +10,7 @@ done
 echo "Database is ready!"
 
 # Apply migrations (Do NOT generate them here,generation is manual)
-# alembic upgrade head
+alembic upgrade head
 python script/seed_initial_data.py
 python app/script/ingest_knowledge.py
 python app/script/ingest_logs.py
