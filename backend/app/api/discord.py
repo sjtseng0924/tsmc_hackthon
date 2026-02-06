@@ -9,7 +9,7 @@ import discord
 import os
 import logging
 
-router = APIRouter(prefix="/discord", tags=["discord"])
+router = APIRouter(prefix="/api/discord", tags=["discord"])
 logger = logging.getLogger(__name__)
 
 # Pydantic schemas

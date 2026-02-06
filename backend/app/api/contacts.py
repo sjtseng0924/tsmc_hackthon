@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.models import Contact
 
-router = APIRouter(prefix="/contacts", tags=["contacts"])
+router = APIRouter(prefix="/api/contacts", tags=["contacts"])
 
 # Pydantic schemas
 class ContactCreate(BaseModel):

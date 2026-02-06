@@ -99,7 +99,7 @@ async def shutdown_event() -> None:
         await service.shutdown()
 
 
-@app.get("/health")
+@app.get("/api/health")
 async def health_check() -> dict:
     service: DiscordService = getattr(app.state, "discord_service", None)
     return {
@@ -108,7 +108,7 @@ async def health_check() -> dict:
     }
 
 
-@app.post("/discord/send", response_model=DiscordSendResponse)
+@app.post("/api/discord/send", response_model=DiscordSendResponse)
 async def send_discord_message(payload: DiscordSendRequest) -> DiscordSendResponse:
     service: DiscordService = getattr(app.state, "discord_service", None)
     if service is None:
@@ -130,7 +130,7 @@ async def send_discord_message(payload: DiscordSendRequest) -> DiscordSendRespon
     return DiscordSendResponse(message_id=message.id, channel_id=message.channel.id)
 
 
-@app.post("/discord/webhook/replay", response_model=WebhookReplayResponse)
+@app.post("/api/discord/webhook/replay", response_model=WebhookReplayResponse)
 async def replay_webhook(payload: WebhookReplayRequest) -> WebhookReplayResponse:
     webhook_url = get_webhook_url(scenario=payload.scenario)
     if not webhook_url:
@@ -158,7 +158,7 @@ async def replay_webhook(payload: WebhookReplayRequest) -> WebhookReplayResponse
     return WebhookReplayResponse(sent=sent)
 
 
-@app.post("/agent", response_model=GeminiAgentResponse)
+@app.post("/api/agent", response_model=GeminiAgentResponse)
 async def agent_handler(payload: GeminiAgentRequest) -> GeminiAgentResponse:
     """呼叫 Gemini Agent"""
     if not GEMINI_AVAILABLE:
