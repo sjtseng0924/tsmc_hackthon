@@ -368,7 +368,7 @@ def get_code_file(filename: str, max_chars: int = 3000) -> str:
 
 def list_case_reports(limit: int = 20) -> str:
     """
-    List available incident reports (knowledge cases).
+    List available incident reports (knowledge cases) with key details.
     """
     _emit_progress("目前在看: 結案報告清單")
     limit = max(1, min(limit, 50))
@@ -377,7 +377,7 @@ def list_case_reports(limit: int = 20) -> str:
         rows = (
             db.query(Knowledge)
             .filter(Knowledge.root_cause.isnot(None))
-            .order_by(Knowledge.case_id.asc())
+            .order_by(Knowledge.filename.asc())
             .limit(limit)
             .all()
         )
@@ -386,32 +386,70 @@ def list_case_reports(limit: int = 20) -> str:
         lines = ["可用的結案報告:"]
         for row in rows:
             lines.append(
-                f"- {row.case_id}: {row.title} (severity={row.severity})"
+                f"- {row.filename}: {row.title}\n"
+                f"  Severity: {row.severity}\n"
+                f"  Occurred: {row.occurred_at}\n"
+                f"  Resolved: {row.resolved_at}\n"
+                f"  Problem: {row.report_problem}\n"
+                f"  Root Cause: {row.root_cause}\n"
+                f"  Solution: {row.solution}\n"
+                f"  --------------------------------------------------"
             )
         return "\n".join(lines)
     finally:
         db.close()
 
 
-def get_case_report(case_id: str) -> str:
+def get_case_report(filename: str) -> str:
     """
-    Retrieve a specific incident report by case ID.
+    Retrieve a specific incident report by filename (Web ID).
     """
-    _emit_progress(f"目前在看: 結案報告 {case_id}\n原因: 比對過去案例找出相似根因")
-    if not case_id:
-        return "請提供要查詢的 case_id。"
+    _emit_progress(f"目前在看: 結案報告 {filename}\n原因: 比對過去案例找出相似根因")
+    if not filename:
+        return "請提供要查詢的 filename。"
     db = SessionLocal()
     try:
-        row = db.query(Knowledge).filter(Knowledge.case_id == case_id).first()
+        row = db.query(Knowledge).filter(Knowledge.filename == filename).first()
         if not row:
             return "找不到指定的結案報告。"
+        
+        # Format timeline list
+        timeline_str = "\n".join(f"    - {t}" for t in (row.timeline or []))
+        
+        # Format preventive measures
+        preventive_str = ""
+        if row.preventive_measures:
+             preventive_str = "\n".join(
+                 f"    - [{p.get('title', 'Unknown')}] {p.get('content', '')} (Owner: {p.get('owner', '')})"
+                 for p in row.preventive_measures
+             )
+
+        # Format hidden risks
+        risks_str = ""
+        if row.hidden_risks:
+             risks_str = "\n".join(
+                 f"    - [{r.get('title', 'Unknown')}] {r.get('content', '')}"
+                 for r in row.hidden_risks
+             )
+
         return (
-            f"Case {row.case_id}: {row.title}\n"
+            f"File: {row.filename}\n"
+            f"Title: {row.title}\n"
             f"Severity: {row.severity}\n"
-            f"Summary: {row.summary}\n"
-            f"Root Cause: {row.root_cause}\n"
-            f"Immediate Fix: {row.immediate_fix}\n"
-            f"Long-term Fix: {row.long_term_fix}\n"
+            f"Date: {row.report_date}\n"
+            f"Occurred: {row.occurred_at}\n"
+            f"Resolved: {row.resolved_at}\n\n"
+            f"Report Problem:\n{row.report_problem}\n\n"
+            f"Impact - Service:\n{row.impact_service}\n\n"
+            f"Impact - User:\n{row.impact_user}\n\n"
+            f"Impact - Data:\n{row.impact_data}\n\n"
+            f"Root Cause:\n{row.root_cause}\n\n"
+            f"Event Details:\n{row.event_details}\n\n"
+            f"Timeline:\n{timeline_str}\n\n"
+            f"Inference Process:\n{row.inference_process}\n\n"
+            f"Solution:\n{row.solution}\n\n"
+            f"Preventive Measures:\n{preventive_str}\n\n"
+            f"Hidden Risks:\n{risks_str}\n"
         )
     finally:
         db.close()
