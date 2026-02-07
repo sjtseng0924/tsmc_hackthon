@@ -486,7 +486,7 @@ def _build_calendar_prompt(user_message: str, history: str, rag_context: str, ch
 
 def _build_solution_prompt(user_message: str, history: str, rag_context: str) -> str:
     return (
-        "模式：solution（協助解決問題，務必交叉查閱對使用者對話、log、code、之前的knowledge，在每一次的查閱中找到下一次要看的檔案並使用函式，務必這四種每一種調閱都要試過）\n"
+        "模式：solution（協助解決問題，務必交叉查閱對使用者discussion、log、code、case report，在每一次的查閱中找到下一次要看的檔案並使用函式，務必這四種每一種調閱都要試過）\n"
         "請一次完成並輸出最終結果，只輸出兩段(回復不能為空非常重要)，不要輸出底下括號內的文字，務必不能查看重複的檔案超過兩次\n"
         "## Issue 發生細節描述\n"
         "- 根本原因(用一兩句話總結整個問題)\n"
