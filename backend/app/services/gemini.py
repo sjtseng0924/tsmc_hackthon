@@ -47,6 +47,7 @@ _vertex_initialized = False
 SYSTEM_INSTRUCTION = (
     "你是一個 IT 事故處理助手 (IT Incident Assistant)。\n"
     "請使用繁體中文，保持專業、冷靜與條理。"
+    "在輸出結案報告或者其他回應時，\n為換行，且""為prompt敘述的前後標記，請不要在輸出中帶有這些標記。\n"
 )
 
 
