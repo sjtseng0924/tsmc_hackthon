@@ -386,14 +386,7 @@ def list_case_reports(limit: int = 20) -> str:
         lines = ["可用的結案報告:"]
         for row in rows:
             lines.append(
-                f"- {row.filename}: {row.title}\n"
-                f"  Severity: {row.severity}\n"
-                f"  Occurred: {row.occurred_at}\n"
-                f"  Resolved: {row.resolved_at}\n"
-                f"  Problem: {row.report_problem}\n"
-                f"  Root Cause: {row.root_cause}\n"
-                f"  Solution: {row.solution}\n"
-                f"  --------------------------------------------------"
+                f"- {row.filename}: {row.title} (severity={row.severity})"
             )
         return "\n".join(lines)
     finally:
@@ -411,25 +404,28 @@ def get_case_report(filename: str) -> str:
     try:
         row = db.query(Knowledge).filter(Knowledge.filename == filename).first()
         if not row:
-            return "找不到指定的結案報告。"
+            return f"找不到指定的結案報告: {filename}"
         
         # Format timeline list
-        timeline_str = "\n".join(f"    - {t}" for t in (row.timeline or []))
+        timeline_list = row.timeline if isinstance(row.timeline, list) else []
+        timeline_str = "\n".join(f"    - {t}" for t in timeline_list)
         
         # Format preventive measures
         preventive_str = ""
-        if row.preventive_measures:
+        pm_list = row.preventive_measures if isinstance(row.preventive_measures, list) else []
+        if pm_list:
              preventive_str = "\n".join(
                  f"    - [{p.get('title', 'Unknown')}] {p.get('content', '')} (Owner: {p.get('owner', '')})"
-                 for p in row.preventive_measures
+                 for p in pm_list if isinstance(p, dict)
              )
 
         # Format hidden risks
         risks_str = ""
-        if row.hidden_risks:
+        hr_list = row.hidden_risks if isinstance(row.hidden_risks, list) else []
+        if hr_list:
              risks_str = "\n".join(
                  f"    - [{r.get('title', 'Unknown')}] {r.get('content', '')}"
-                 for r in row.hidden_risks
+                 for r in hr_list if isinstance(r, dict)
              )
 
         return (

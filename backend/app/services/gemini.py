@@ -476,7 +476,7 @@ def _build_summary_all_prompt(user_message: str, history: str, rag_context: str)
         "- 事件時間軸\n\n"
         "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
         "- 檔案閱讀推理過程\n\n"
-        "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
+        "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。請務必寫到 搜尋歷史報告 case report (knowledge base) 的相關結果)\n\n"
         "5. 解決方案\n\n"
         "(若對話紀錄已有該段落內容，直接原文引用或等義整理；沒有則補齊。)\n\n"
         "6. 之後如何避免\n\n"
@@ -618,6 +618,7 @@ def _build_calendar_prompt(user_message: str, history: str, rag_context: str, ch
 def _build_solution_prompt(user_message: str, history: str, rag_context: str) -> str:
     return (
         "模式：solution（協助解決問題，務必交叉查閱對使用者discussion、log、code、case report，在每一次的查閱中找到下一次要看的檔案並使用函式，務必這四種每一種調閱都要試過）\n"
+        "查閱 Case Report 時：先使用 list_case_reports 查看可用報告清單，根據標題與摘要篩選出相關案例，再使用 get_case_report(filename) 取得該案例的詳細內容，其中如果報錯請直接輸出報錯內容，此外注意 filename 的格式是 INC-xxx，務必注意。\n"
         "請一次完成並輸出最終結果，只輸出兩段(回復不能為空非常重要)，不要輸出底下括號內的文字，務必不能查看重複的檔案超過兩次\n"
         "## Issue 發生細節描述\n"
         "- 根本原因(用一兩句話總結整個問題)\n"
@@ -625,7 +626,7 @@ def _build_solution_prompt(user_message: str, history: str, rag_context: str) ->
         "- 檔案閱讀推理過程(詳細寫說是在code, log中看到什麼才決定打開什麼檔案並在其中搜尋甚麼發現甚麼)\n"
         "推理過程範例，根據使用者提到什麼的對話決定先去看甚麼log或code。之後繼續列在該份log和code中發現了什麼，才決定接下來要看什麼檔案。務必列出詳細的推理過程，並且在每個步驟都標明參考的檔案名稱和內容摘要。\n"
         "## 解決方案(列出每個面向的問題以及解決方法)\n"
-        "並在每段中標示參考檔案名稱（例如：tNote_app_server_v1.log, INC-20230815-04）。\n"
+        "並在每段中標示參考檔案名稱（例如：tNote_app_server_v1.log, INC-20230815-04）。請搜尋歷史報告 case report (knowledge base) 的相關結果\n"
         "避免重複查看相同來源，資料足夠就直接總結。\n"
         "\n歷史對話:\n"
         f"{history}\n"
