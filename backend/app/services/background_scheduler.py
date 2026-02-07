@@ -18,19 +18,19 @@ scheduler = BackgroundScheduler()
 def start_scheduler():
     """
     Start the background scheduler to execute pending tasks at fixed times.
-    Runs at :00, :15, :30, :45 of every hour.
+    Runs every 5 minutes: :00, :05, :10, :15, :20, :25, :30, :35, :40, :45, :50, :55.
     """
-    # 改用 CronTrigger：在每小時的 0, 15, 30, 45 分執行
+    # 改用 CronTrigger：每 5 分鐘執行一次
     scheduler.add_job(
         func=run_scheduled_tasks,
-        trigger=CronTrigger(minute='0,15,30,45'),  # 固定時間
+        trigger=CronTrigger(minute='*/5'),  # 每 5 分鐘
         id='execute_pending_tasks',
         name='Execute pending scheduled tasks',
         replace_existing=True
     )
     
     scheduler.start()
-    logger.info("✅ Background scheduler started - will execute tasks at :00, :15, :30, :45")
+    logger.info("✅ Background scheduler started - will execute tasks every 5 minutes")
 
 
 def run_scheduled_tasks():

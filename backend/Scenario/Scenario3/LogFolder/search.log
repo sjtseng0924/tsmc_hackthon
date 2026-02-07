@@ -1,0 +1,84 @@
+[2024-01-10T09:15:30Z] [INFO] [SearchService-Main] Service 'FullTextSearch' initialized and ready. Index size: 15.2 GB.
+[2024-01-10T09:16:00Z] [INFO] [IndexRefresher] Index refresh cycle started.
+[2024-01-10T09:16:15Z] [INFO] [IndexRefresher] Index refresh cycle completed. Duration: 15.2s.
+[2024-01-10T09:18:20Z] [INFO] [CacheManager] Search result cache initialized. Max size: 2GB.
+[2024-01-10T09:20:01Z] [INFO] [AccessLog] Received search request. User: 'david.eng', Query: 'system outage', IP: 10.1.1.5.
+[2024-01-10T09:20:01Z] [INFO] [QueryParser] Parsed query. Tokens: [system, outage], Mode: AND.
+[2024-01-10T09:20:02Z] [INFO] [IndexSearcher] Execution plan: Scanned 3 indexes, 12 shards. Matched 500 documents. Aggregated 5 final results. Duration: 120ms.
+[2024-01-10T09:22:15Z] [INFO] [CacheManager] Search result cache hit ratio: 35.2%.
+[2024-01-10T09:24:05Z] [INFO] [AccessLog] Received search request. User: 'anna.qa', Query: 'login failure', IP: 10.1.2.8.
+[2024-01-10T09:24:05Z] [INFO] [QueryParser] Parsed query. Tokens: [login, failure], Mode: AND.
+[2024-01-10T09:24:06Z] [INFO] [IndexSearcher] Execution plan: Scanned 5 indexes, 20 shards. Matched 800 documents. Aggregated 3 final results. Duration: 155ms.
+[2024-01-10T09:25:45Z] [INFO] [AccessLog] Received search request. User: 'kevin.lead', Query: '2024 budget', IP: 10.1.1.2.
+[2024-01-10T09:25:45Z] [INFO] [QueryParser] Parsed query. Tokens: [2024, budget], Mode: AND.
+[2024-01-10T09:25:46Z] [INFO] [IndexSearcher] Execution plan: Scanned 10 indexes, 40 shards. Matched 2500 documents. Aggregated 15 final results. Duration: 250ms.
+[2024-01-10T09:28:30Z] [INFO] [AccessLog] Received search request. User: 'mark.sales', Query: 'new client', IP: 10.1.3.12.
+[2024-01-10T09:28:30Z] [INFO] [QueryParser] Parsed query. Tokens: [new, client], Mode: AND.
+[2024-01-10T09:28:31Z] [INFO] [IndexSearcher] Execution plan: Scanned 2 indexes, 8 shards. Matched 300 documents. Aggregated 9 final results. Duration: 80ms.
+[2024-01-10T09:30:00Z] [INFO] [CacheManager] Evicting stale cache entries. Evicted: 128.
+[2024-01-10T09:31:00Z] [INFO] [IndexRefresher] Index refresh cycle started.
+[2024-01-10T09:31:20Z] [INFO] [IndexRefresher] Index refresh cycle completed. Duration: 20.1s.
+[2024-01-10T09:33:10Z] [INFO] [AccessLog] Received search request. User: 'susan.hr', Query: 'benefits package', IP: 10.1.4.20.
+[2024-01-10T09:33:10Z] [INFO] [QueryParser] Parsed query. Tokens: [benefits, package], Mode: AND.
+[2024-01-10T09:33:11Z] [INFO] [IndexSearcher] Execution plan: Scanned 4 indexes, 16 shards. Matched 600 documents. Aggregated 4 final results. Duration: 110ms.
+[2024-01-10T09:35:00Z] [INFO] [AccessLog] Received search request. User: 'cindy.pm', Query: 'marketing campaign', IP: 10.1.1.3.
+[2024-01-10T09:35:00Z] [INFO] [QueryParser] Parsed query. Tokens: [marketing, campaign], Mode: AND, Facets: [Time, Author].
+[2024-01-10T09:35:01Z] [INFO] [IndexSearcher] Execution plan: Scanned 15 indexes, 60 shards. Matched 8300 documents. Applied 3 facets. Aggregated 42 final results. Duration: 310ms.
+[2024-01-10T09:37:05Z] [INFO] [AccessLog] Received search request. User: 'david.eng', Query: 'kubernetes deployment', IP: 10.1.1.5.
+[2024-01-10T09:37:05Z] [INFO] [QueryParser] Parsed query. Tokens: [kubernetes, deployment], Mode: AND.
+[2024-01-10T09:37:06Z] [INFO] [IndexSearcher] Execution plan: Scanned 7 indexes, 28 shards. Matched 2100 documents. Aggregated 11 final results. Duration: 190ms.
+[2024-01-10T09:40:00Z] [INFO] [CacheManager] Search result cache hit ratio: 41.5%.
+[2024-01-10T09:41:00Z] [INFO] [IndexRefresher] Index refresh cycle started.
+[2024-01-10T09:41:19Z] [INFO] [IndexRefresher] Index refresh cycle completed. Duration: 19.3s.
+[2024-01-10T09:42:50Z] [INFO] [AccessLog] Received search request. User: 'anna.qa', Query: 'regression test suite', IP: 10.1.2.8.
+[2024-01-10T09:42:50Z] [INFO] [QueryParser] Parsed query. Tokens: [regression, test, suite], Mode: AND.
+[2024-01-10T09:42:51Z] [INFO] [IndexSearcher] Execution plan: Scanned 9 indexes, 36 shards. Matched 4200 documents. Aggregated 18 final results. Duration: 230ms.
+[2024-01-10T09:45:05Z] [INFO] [AccessLog] Received search request. User: 'susan.hr', Query: 'employee handbook', IP: 10.1.4.20.
+[2024-01-10T09:45:05Z] [INFO] [QueryParser] Parsed query. Tokens: [employee, handbook], Mode: AND.
+[2024-01-10T09:45:06Z] [INFO] [IndexSearcher] Execution plan: Scanned 2 indexes, 8 shards. Matched 150 documents. Aggregated 1 final result. Duration: 90ms.
+[2024-01-10T09:46:00Z] [INFO] [IndexRefresher] Index refresh cycle started.
+[2024-01-10T09:46:18Z] [INFO] [IndexRefresher] Index refresh cycle completed. Duration: 18.5s.
+[2024-01-10T09:47:11Z] [INFO] [AccessLog] Received search request. User: 'david.eng', Query: 'database performance', IP: 10.1.1.5.
+[2024-01-10T09:47:11Z] [INFO] [QueryParser] Parsed query. Tokens: [database, performance], Mode: AND.
+[2024-01-10T09:47:12Z] [INFO] [IndexSearcher] Execution plan: Scanned 8 indexes, 32 shards. Matched 3500 documents. Aggregated 8 final results. Duration: 220ms.
+[2024-01-10T09:49:00Z] [INFO] [AccessLog] Received search request. User: 'kevin.lead', Query: 'quarterly financial report', IP: 10.1.1.2.
+[2024-01-10T09:49:00Z] [INFO] [QueryParser] Parsed query. Tokens: [quarterly, financial, report], Mode: AND.
+[2024-01-10T09:49:01Z] [INFO] [IndexSearcher] Execution plan: Scanned 12 indexes, 48 shards. Matched 6500 documents. Aggregated 20 final results. Duration: 300ms.
+[2024-01-10T09:50:30Z] [INFO] [AccessLog] Received search request. User: 'david.eng', Query: 'log_archive_utility', IP: 10.1.1.5.
+[2024-01-10T09:50:30Z] [INFO] [QueryParser] Parsed query. Tokens: [log, archive, utility], Mode: AND.
+[2024-01-10T09:50:31Z] [INFO] [IndexSearcher] Execution plan: Scanned 5 indexes, 20 shards. Matched 1200 documents. Aggregated 2 final results. Duration: 180ms.
+[2024-01-10T09:51:00Z] [INFO] [CacheManager] Search result cache hit ratio: 45.8%.
+[2024-01-10T09:51:30Z] [INFO] [IndexRefresher] Index refresh cycle started.
+[2024-01-10T09:51:51Z] [INFO] [IndexRefresher] Index refresh cycle completed. Duration: 21.2s.
+[2024-01-10T09:53:15Z] [INFO] [AccessLog] Received search request. User: 'cindy.pm', Query: 'Q1 OKR', IP: 10.1.1.3.
+[2024-01-10T09:53:15Z] [INFO] [QueryParser] Parsed query. Tokens: [q1, okr], Mode: AND.
+[2024-01-10T09:53:16Z] [INFO] [IndexSearcher] Execution plan: Scanned 4 indexes, 16 shards. Matched 900 documents. Aggregated 10 final results. Duration: 150ms.
+[2024-01-10T09:55:01Z] [INFO] [AccessLog] Received search request. User: 'kevin.lead', Query: 'P0 incident', IP: 10.1.1.2.
+[2024-01-10T09:55:01Z] [INFO] [QueryParser] Parsed query. Tokens: [p0, incident], Mode: AND, Sort: by_date_desc.
+[2024-01-10T09:55:02Z] [INFO] [IndexSearcher] Execution plan: Scanned 20 indexes, 80 shards. Matched 15000 documents. Applied 5 facets. Sorted results. Aggregated 25 final results. Duration: 450ms.
+[2024-01-10T09:56:00Z] [INFO] [IndexRefresher] Index refresh cycle started.
+[2024-01-10T09:56:22Z] [INFO] [IndexRefresher] Index refresh cycle completed. Duration: 22.3s.
+[2024-01-10T09:57:40Z] [INFO] [AccessLog] Received search request. User: 'anna.qa', Query: 'user acceptance testing', IP: 10.1.2.8.
+[2024-01-10T09:57:40Z] [INFO] [QueryParser] Parsed query. Tokens: [user, acceptance, testing], Mode: AND.
+[2024-01-10T09:57:41Z] [INFO] [IndexSearcher] Execution plan: Scanned 11 indexes, 44 shards. Matched 5500 documents. Aggregated 12 final results. Duration: 280ms.
+[2024-01-10T09:59:50Z] [INFO] [AccessLog] Received search request. User: 'anna.qa', Query: 'load testing results', IP: 10.1.2.8.
+[2024-01-10T09:59:50Z] [INFO] [QueryParser] Parsed query. Tokens: [load, testing, results], Mode: AND.
+[2024-01-10T09:59:51Z] [INFO] [IndexSearcher] Execution plan: Scanned 18 indexes, 72 shards. Matched 9500 documents. Aggregated 33 final results. Duration: 380ms.
+[2024-01-10T10:01:00Z] [INFO] [IndexRefresher] Index refresh cycle started.
+[2024-01-10T10:01:25Z] [INFO] [IndexRefresher] Index refresh cycle completed. Duration: 25.1s.
+[2024-01-10T10:01:15Z] [INFO] [AccessLog] Received search request. User: 'anna.qa', Query: 'performance testing', IP: 10.1.2.8.
+[2024-01-10T10:01:15Z] [INFO] [QueryParser] Parsed query. Tokens: [performance, testing], Mode: AND.
+[2024-01-10T10:01:16Z] [INFO] [IndexSearcher] Execution plan: Scanned 12 indexes, 48 shards. Matched 6000 documents. Aggregated 18 final results. Duration: 280ms.
+[2024-01-10T10:01:50Z] [INFO] [AccessLog] Received search request. User: 'david.eng', Query: 'system log format', IP: 10.1.1.5.
+[2024-01-10T10:01:50Z] [INFO] [QueryParser] Parsed query. Tokens: [system, log, format], Mode: AND.
+[2024-01-10T10:01:51Z] [INFO] [IndexSearcher] Execution plan: Scanned 3 indexes, 12 shards. Matched 450 documents. Aggregated 4 final results. Duration: 110ms.
+[2024-01-10T10:02:30Z] [INFO] [CacheManager] Search result cache hit ratio: 52.1%.
+[2024-01-10T10:03:15Z] [INFO] [AccessLog] Received search request. User: 'kevin.lead', Query: 'all P0 incidents 2023', IP: 10.1.1.2.
+[2024-01-10T10:03:15Z] [INFO] [QueryParser] Parsed query. Tokens: [all, p0, incidents, 2023], Mode: AND, Filter: [year=2023].
+[2024-01-10T10:03:16Z] [INFO] [IndexSearcher] Execution plan: Scanned 25 indexes, 100 shards. Matched 18000 documents. Aggregated 30 final results. Duration: 550ms.
+[2024-01-10T10:04:01Z] [INFO] [AccessLog] Received search request. User: 'cindy.pm', Query: 'user feedback', IP: 10.1.1.3.
+[2024-01-10T10:04:01Z] [INFO] [QueryParser] Parsed query. Tokens: [user, feedback], Mode: AND, Sort: by_date_desc.
+[2024-01-10T10:04:02Z] [INFO] [IndexSearcher] Execution plan: Scanned 30 indexes, 120 shards. Matched 25000 documents. Sorted results. Aggregated 150 final results. Duration: 350ms.
+[2024-01-10T10:04:20Z] [INFO] [AccessLog] Received search request. User: 'kevin.lead', Query: 'risk assessment', IP: 10.1.1.2.
+[2024-01-10T10:04:20Z] [INFO] [QueryParser] Parsed query. Tokens: [risk, assessment], Mode: AND.
+[2024-01-10T10:04:21Z] [INFO] [IndexSearcher] Execution plan: Scanned 14 indexes, 56 shards. Matched 7800 documents. Aggregated 22 final results. Duration: 290ms.

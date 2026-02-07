@@ -1,0 +1,74 @@
+[2024-01-10T09:10:15Z] [INFO] [Deployment] Feature flag 'full-text-search' enabled globally.
+[2024-01-10T09:15:30Z] [INFO] [tNote-Search-Service] Service initialized on all nodes (172.16.1.12-16). Index size: 15.2 GB.
+[2024-01-10T09:16:00Z] [INFO] [tNote-App-Service] Health check OK on all nodes.
+[2024-01-10T09:16:30Z] [INFO] [Cache-Service] Hit ratio is 82%.
+[2024-01-10T09:17:00Z] [INFO] [DB-Replication] Replication lag is 2ms.
+[2024-01-10T09:18:00Z] [INFO] [tNote-App-Service] Health check OK on all nodes.
+[2024-01-10T09:19:10Z] [INFO] [tNote-Search-Service] User 'test.user' performed search on node [172.16.1.13].
+[2024-01-10T09:20:01Z] [INFO] [tNote-Search-Service] User 'david.eng' performed search on node [172.16.1.12].
+[2024-01-10T09:20:45Z] [INFO] [DB-Replication] Replication lag is 5ms.
+[2024-01-10T09:21:30Z] [INFO] [tNote-App-Service] Health check OK on all nodes.
+[2024-01-10T09:22:30Z] [INFO] [Cache-Service] Hit ratio is 85%.
+[2024-01-10T09:23:15Z] [INFO] [tNote-Search-Service] User 'anna.qa' performed search on node [172.16.1.15].
+[2024-01-10T09:24:00Z] [INFO] [DB-Replication] Replication lag is 3ms.
+[2024-01-10T09:25:00Z] [INFO] [tNote-App-Service] Health check OK on all nodes.
+[2024-01-10T09:25:45Z] [INFO] [tNote-Search-Service] User 'kevin.lead' performed search on node [172.16.1.14].
+[2024-01-10T09:26:50Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.12]: Disk usage on /var is at 85%.
+[2024-01-10T09:28:15Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.13]: Disk usage on /var is at 86%.
+[2024-01-10T09:29:00Z] [INFO] [Cache-Service] Hit ratio is 86%.
+[2024-01-10T09:30:00Z] [INFO] [DB-Replication] Replication lag is 3ms.
+[2024-01-10T09:30:40Z] [INFO] [tNote-Search-Service] User 'mark.sales' performed search on node [172.16.1.16].
+[2024-01-10T09:32:10Z] [INFO] [tNote-App-Service] Health check OK on all nodes.
+[2024-01-10T09:33:20Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.14]: Disk usage on /var is at 87%.
+[2024-01-10T09:35:00Z] [INFO] [tNote-Search-Service] User 'cindy.pm' performed search on node [172.16.1.13].
+[2024-01-10T09:35:40Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.15]: Disk usage on /var is at 88%.
+[2024-01-10T09:37:00Z] [INFO] [tNote-App-Service] Health check OK on all nodes.
+[2024-01-10T09:38:00Z] [INFO] [Cache-Service] Hit ratio is 87%.
+[2024-01-10T09:39:15Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.12]: Disk usage on /var is at 89%.
+[2024-01-10T09:40:25Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.16]: Disk usage on /var is at 90%.
+[2024-01-10T09:42:00Z] [INFO] [tNote-App-Service] Health check OK on all nodes.
+[2024-01-10T09:43:30Z] [INFO] [DB-Replication] Replication lag is 2ms.
+[2024-01-10T09:44:50Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.14]: Disk usage on /var is at 92%.
+[2024-01-10T09:45:05Z] [INFO] [tNote-Search-Service] User 'susan.hr' performed search on node [172.16.1.12].
+[2024-01-10T09:46:00Z] [INFO] [DB-Replication] Replication lag is 2ms.
+[2024-01-10T09:46:40Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.13]: Disk usage on /var is at 93%.
+[2024-01-10T09:47:11Z] [INFO] [tNote-Search-Service] User 'david.eng' performed search on node [172.16.1.13].
+[2024-01-10T09:48:10Z] [INFO] [tNote-App-Service] Health check OK on all nodes.
+[2024-01-10T09:49:00Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.15]: Disk usage on /var is at 94%.
+[2024-01-10T09:50:22Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.14]: Disk usage on /var is at 95%. Threshold reached.
+[2024-01-10T09:50:30Z] [INFO] [tNote-Search-Service] User 'david.eng' performed search on node [172.16.1.16].
+[2024-01-10T09:51:30Z] [INFO] [Cache-Service] Hit ratio is 89%.
+[2024-01-10T09:52:10Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.12]: Disk usage on /var is at 96%.
+[2024-01-10T09:53:15Z] [INFO] [tNote-Search-Service] User 'cindy.pm' performed search on node [172.16.1.12].
+[2024-01-10T09:54:15Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.15]: Disk usage on /var is at 97%.
+[2024-01-10T09:55:01Z] [INFO] [tNote-Search-Service] User 'kevin.lead' performed complex search on node [172.16.1.13].
+[2024-01-10T09:56:30Z] [INFO] [tNote-App-Service] Health check OK on all nodes.
+[2024-01-10T09:57:00Z] [INFO] [DB-Replication] Replication lag is 3ms.
+[2024-01-10T09:58:40Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.13]: Disk usage on /var is at 98%.
+[2024-01-10T09:59:50Z] [INFO] [tNote-Search-Service] User 'anna.qa' performed search on node [172.16.1.14].
+[2024-01-10T10:00:10Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.12]: Disk usage on /var is at 98%. Critical threshold reached.
+[2024-01-10T10:01:15Z] [INFO] [tNote-Search-Service] User 'anna.qa' performed search on node [172.16.1.14].
+[2024-01-10T10:01:50Z] [INFO] [tNote-Search-Service] User 'david.eng' performed search on node [172.16.1.12].
+[2024-01-10T10:02:00Z] [INFO] [DB-Replication] Replication lag is 4ms.
+[2024-01-10T10:02:45Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.16]: Disk usage on /var is at 99%.
+[2024-01-10T10:03:30Z] [WARN] [DiskMonitor] ALERT on node [172.16.1.13]: Disk usage on /var is at 99%. IMPENDING FAILURE.
+[2024-01-10T10:03:55Z] [INFO] [EmailService] Sent disk space warning to 'sre-team@internal.company.com'.
+[2024-01-10T10:04:01Z] [INFO] [tNote-Search-Service] User 'cindy.pm' performed heavy search on node [172.16.1.15].
+[2024-01-10T10:04:20Z] [INFO] [tNote-Search-Service] User 'kevin.lead' performed search on node [172.16.1.16].
+[2024-01-10T10:04:31Z] [ERROR] [LogWriter] First failure on node [172.16.1.12]: Failed to write to log file /var/log/tNote/search.log. Reason: No space left on device.
+[2024-01-10T10:04:32Z] [ERROR] [CacheManager] First failure on node [172.16.1.14]: Failed to write cache file /var/tmp/search-result-4d5e6f.tmp. Reason: No space left on device.
+[2024-01-10T10:04:33Z] [ERROR] [DB-Client] First failure on node [172.16.1.15]: Could not write to transaction log (xlog). Reason: No space left on device.
+[2024-01-10T10:04:34Z] [ERROR] [SessionManager] First failure on node [172.16.1.13]: Failed to create new session file. Reason: No space left on device.
+[2024-01-10T10:04:35Z] [ERROR] [UploadHandler] First failure on node [172.16.1.16]: Failed to write incoming file to temp dir. Reason: No space left on device.
+[2024-01-10T10:04:38Z] [CRITICAL] [ProcessManager] First crash on node [172.16.1.12]: Main application process crashed. Reason: Cannot allocate memory.
+[2024-01-10T10:04:40Z] [INFO] [tNote-App-Service] Node [172.16.1.14] received SIGTERM, shutting down...
+[2024-01-10T10:04:41Z] [CRITICAL] [ProcessManager] Crash on node [172.16.1.13]: Unable to fork new process.
+[2024-01-10T10:04:42Z] [CRITICAL] [HealthCheck] Node [172.16.1.15] is not responding. Service is down.
+[2024-01-10T10:04:44Z] [INFO] [tNote-App-Service] Node [172.16.1.16] shutdown complete.
+[2024-01-10T10:04:45Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.34.56, server: tnote.company.com, request: "GET /api/v2/search?q=test", upstream: "http://172.16.1.12:8080/api/v2/search?q=test"
+[2024-01-10T10:04:46Z] [ERROR] [tNote-Nginx-Gateway] no live upstreams while connecting to upstream, client: 101.12.35.67, server: tnote.company.com, request: "GET /api/v1/notes"
+[2024-01-10T10:04:48Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.36.78, server: tnote.company.com, request: "GET /api/v1/health", upstream: "http://172.16.1.14:8080/api/v1/health"
+[2024-01-10T10:04:50Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.37.89, server: tnote.company.com, request: "GET /api/v1/me", upstream: "http://172.16.1.15:8080/api/v1/me"
+[2024-01-10T10:04:51Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.38.90, server: tnote.company.com, request: "POST /upload", upstream: "http://172.16.1.16:8080/upload"
+[2024-01-10T10:04:52Z] [ERROR] [tNote-Nginx-Gateway] (111: Connection refused) while connecting to upstream, client: 101.12.39.91, server: tnote.company.com, request: "GET /api/v1/notes/123", upstream: "http://172.16.1.13:8080/api/v1/notes/123"
+[2024-01-10T10:10:00Z] [CRITICAL] [GlobalMonitor] Alert: All tNote upstream services are down. Service outage declared.
