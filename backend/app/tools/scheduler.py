@@ -95,6 +95,15 @@ def schedule_invite_when_available(
         # Format scheduled time for Taiwan timezone display (UTC+8)
         scheduled_display = (scheduled_time + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")
         
+        # Log the scheduled task creation
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            f"📅 Scheduled task created: ID={task.id}, Type={task.task_type}, "
+            f"User={user_name}, Channel={channel_id}, "
+            f"Scheduled={scheduled_display} (TW)"
+        )
+        
         return (
             f"✅ 已排程！\n"
             f"• 使用者：{user_name}\n"
