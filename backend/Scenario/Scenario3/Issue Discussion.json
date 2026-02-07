@@ -1,0 +1,44 @@
+[
+  {
+    "timestamp": "2024-01-10T10:05:15Z",
+    "user": "Cindy",
+    "role": "PM",
+    "message": "@here @Kevin @David 緊急！服務掛了！大量使用者回報『503 Service Unavailable』！昨天剛上的全文檢索功能是不是有問題？"
+  },
+  {
+    "timestamp": "2024-01-10T10:05:50Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "什麼？503？David，馬上查！所有人的第一反應肯定都是新功能的問題，重點排查全文檢索服務的進程和資源佔用！"
+  },
+  {
+    "timestamp": "2024-01-10T10:07:20Z",
+    "user": "David",
+    "role": "Engineer",
+    "message": "在查了... 但情況很奇怪。我用 `top` 和 `htop` 看了，全文檢索服務的 CPU 和記憶體佔用率在崩潰前一刻都是正常的，沒有任何洩漏或飆高的跡象。應用程式主進程直接崩潰了。"
+  },
+  {
+    "timestamp": "2024-01-10T10:09:00Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "不是資源佔用問題？那會不會是它跟其他舊服務有衝突？比如搶佔了什麼端口，或者破壞了資料庫連接池？查一下系統日誌，看看崩潰前有沒有可疑的錯誤訊息。"
+  },
+  {
+    "timestamp": "2024-01-10T10:11:30Z",
+    "user": "David",
+    "role": "Engineer",
+    "message": "我正在看日誌... 最後幾秒的日誌一片混亂，全是『Connection refused』, 『Process crashed』, 『Cannot allocate memory』... 看起來像是系統性的雪崩。但完全看不出是哪個服務先倒下的，更找不到和全文檢索服務直接相關的錯誤。"
+  },
+  {
+    "timestamp": "2024-01-10T10:13:00Z",
+    "user": "Cindy",
+    "role": "PM",
+    "message": "所以我們現在既不能證明是新功能的問題，也找不到其他原因？我們完全卡住了？"
+  },
+  {
+    "timestamp": "2024-01-10T10:14:45Z",
+    "user": "Kevin",
+    "role": "Project Lead",
+    "message": "是的... 我們陷入了思維定勢，總覺得是新功能的問題，但所有證據都不支持這一點。我們需要一個能跳出框架的分析。David，我們不能再猜了。一樣請Ivan進來討論。"
+  }
+]

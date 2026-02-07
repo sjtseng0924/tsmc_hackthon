@@ -1,0 +1,81 @@
+2024-01-10 09:00:10.112 UTC [1532] LOG:  connection received: host=172.16.1.12 port=54321, user=tnot_app
+2024-01-10 09:00:10.118 UTC [1532] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2024-01-10 09:02:25.451 UTC [1533] LOG:  connection received: host=172.16.1.13 port=34567, user=tnot_app
+2024-01-10 09:02:25.459 UTC [1533] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2024-01-10 09:05:00.501 UTC [889] LOG:  checkpoint starting: time
+2024-01-10 09:05:08.234 UTC [889] LOG:  checkpoint complete: wrote 780 buffers (4.8%)
+2024-01-10 09:08:11.998 UTC [1532] LOG:  disconnection: session time: 0:08:01.886 user=tnot_app host=172.16.1.12
+2024-01-10 09:10:20.101 UTC [889] LOG:  autovacuum launcher started
+2024-01-10 09:12:01.210 UTC [1533] LOG:  disconnection: session time: 0:09:35.751 user=tnot_app host=172.16.1.13
+2024-01-10 09:15:30.912 UTC [1540] LOG:  connection received: host=172.16.1.14 port=41234, user=tnot_app_search
+2024-01-10 09:15:30.918 UTC [1540] LOG:  connection authorized: user=tnot_app_search database=tnot_prod
+2024-01-10 09:18:45.313 UTC [1541] LOG:  connection received: host=172.16.1.15 port=54322, user=tnot_app
+2024-01-10 09:18:45.319 UTC [1541] LOG:  connection authorized: user=tnot_app database=tnot_prod
+2024-01-10 09:20:01.876 UTC [1540] LOG:  duration: 245.150 ms statement: <complex SELECT query from FullTextSearch>
+2024-01-10 09:22:15.123 UTC [1541] LOG:  disconnection: session time: 0:03:30.804 user=tnot_app host=172.16.1.15
+2024-01-10 09:25:45.567 UTC [1555] LOG:  connection received: host=172.16.1.13 port=54323, user=tnot_app_search
+2024-01-10 09:25:45.573 UTC [1555] LOG:  connection authorized: user=tnot_app_search database=tnot_prod
+2024-01-10 09:25:46.982 UTC [1555] LOG:  duration: 310.982 ms statement: <complex SELECT query from FullTextSearch>
+2024-01-10 09:28:00.432 UTC [1555] LOG:  disconnection: session time: 0:02:15.859 user=tnot_app_search host=172.16.1.13
+2024-01-10 09:30:00.501 UTC [889] LOG:  checkpoint starting: time
+2024-01-10 09:30:08.234 UTC [889] LOG:  checkpoint complete: wrote 950 buffers (5.8%)
+2024-01-10 09:32:50.765 UTC [1540] LOG:  disconnection: session time: 0:17:20.847 user=tnot_app_search host=172.16.1.14
+2024-01-10 09:35:00.212 UTC [1601] LOG:  connection received: host=172.16.1.12 port=48765, user=tnot_app_search
+2024-01-10 09:35:00.218 UTC [1601] LOG:  connection authorized: user=tnot_app_search database=tnot_prod
+2024-01-10 09:35:01.888 UTC [1601] LOG:  duration: 305.888 ms statement: <complex SELECT query from FullTextSearch>
+2024-01-10 09:38:10.894 UTC [1601] LOG:  disconnection: session time: 0:03:10.676 user=tnot_app_search host=172.16.1.12
+2024-01-10 09:40:10.123 UTC [1801] LOG:  connection received: host=chatbot-app-2 [172.16.5.51] port=38765, user=chatbot_user
+2024-01-10 09:40:10.129 UTC [1801] LOG:  connection authorized: user=chatbot_user database=chatbot_prod
+2024-01-10 09:42:30.567 UTC [1802] LOG:  connection received: host=rag-worker-2 [172.16.6.61] port=41238, user=rag_user
+2024-01-10 09:42:30.573 UTC [1802] LOG:  connection authorized: user=rag_user database=rag_prod
+2024-01-10 09:45:00.000 UTC [889] LOG:  autovacuum: processing database "tnot_prod"
+2024-01-10 09:45:05.567 UTC [1620] LOG:  connection received: host=172.16.1.12 port=39876, user=tnot_app_search
+2024-01-10 09:45:05.573 UTC [1620] LOG:  connection authorized: user=tnot_app_search database=tnot_prod
+2024-01-10 09:47:11.982 UTC [1621] LOG:  connection received: host=172.16.1.13 port=54325, user=tnot_app_search
+2024-01-10 09:47:11.988 UTC [1621] LOG:  connection authorized: user=tnot_app_search database=tnot_prod
+2024-01-10 09:48:30.432 UTC [1801] LOG:  disconnection: session time: 0:08:20.303 user=chatbot_user host=172.16.5.51
+2024-01-10 09:50:22.432 UTC [1620] LOG:  disconnection: session time: 0:05:17.859 user=tnot_app_search host=172.16.1.12
+2024-01-10 09:50:30.765 UTC [1621] LOG:  disconnection: session time: 0:03:19.777 user=tnot_app_search host=172.16.1.13
+2024-01-10 09:51:15.876 UTC [1802] LOG:  disconnection: session time: 0:08:45.303 user=rag_user host=172.16.6.61
+2024-01-10 09:53:10.112 UTC [1810] LOG:  connection received: host=chatbot-app-1 [172.16.5.50] port=38766, user=chatbot_user
+2024-01-10 09:53:10.118 UTC [1810] LOG:  connection authorized: user=chatbot_user database=chatbot_prod
+2024-01-10 09:55:00.811 UTC [889] LOG:  checkpoint starting: time
+2024-01-10 09:55:09.112 UTC [889] LOG:  checkpoint complete: wrote 1154 buffers (7.0%)
+2024-01-10 09:55:01.212 UTC [1630] LOG:  connection received: host=172.16.1.13 port=48766, user=tnot_app_search
+2024-01-10 09:55:01.218 UTC [1630] LOG:  connection authorized: user=tnot_app_search database=tnot_prod
+2024-01-10 09:55:02.888 UTC [1630] LOG:  duration: 448.888 ms statement: <very complex SELECT query from FullTextSearch>
+2024-01-10 09:57:21.894 UTC [1630] LOG:  disconnection: session time: 0:02:20.676 user=tnot_app_search host=172.16.1.13
+2024-01-10 09:59:50.345 UTC [1631] LOG:  connection received: host=172.16.1.14 port=54326, user=tnot_app_search
+2024-01-10 09:59:50.351 UTC [1631] LOG:  connection authorized: user=tnot_app_search database=tnot_prod
+2024-01-10 09:59:51.999 UTC [1631] LOG:  duration: 378.999 ms statement: <complex SELECT query from FullTextSearch>
+2024-01-10 10:01:15.123 UTC [1641] LOG:  connection received: host=172.16.1.12 port=48767, user=tnot_app_search
+2024-01-10 10:01:15.129 UTC [1641] LOG:  connection authorized: user=tnot_app_search database=tnot_prod
+2024-01-10 10:01:50.876 UTC [1631] LOG:  disconnection: session time: 0:02:00.527 user=tnot_app_search host=172.16.1.14
+2024-01-10 10:02:50.432 UTC [1641] LOG:  disconnection: session time: 0:01:35.303 user=tnot_app_search host=172.16.1.12
+2024-01-10 10:03:55.999 UTC [1810] LOG:  disconnection: session time: 0:10:45.887 user=chatbot_user host=172.16.5.50
+2024-01-10 10:04:01.567 UTC [1650] LOG:  connection received: host=172.16.1.15 port=41238, user=tnot_app_search
+2024-01-10 10:04:01.573 UTC [1650] LOG:  connection authorized: user=tnot_app_search database=tnot_prod
+2024-01-10 10:04:02.982 UTC [1650] LOG:  duration: 348.982 ms statement: <complex SELECT query from FullTextSearch>
+2024-01-10 10:04:15.567 UTC [1811] LOG:  connection received: host=rag-worker-1 [172.16.6.60] port=41239, user=rag_user
+2024-01-10 10:04:15.573 UTC [1811] LOG:  connection authorized: user=rag_user database=rag_prod
+2024-01-10 10:04:20.988 UTC [1650] LOG:  disconnection: session time: 0:00:19.415 user=tnot_app_search host=172.16.1.15
+2024-01-10 10:04:45.112 UTC [887] LOG:  could not receive data from client: Connection reset by peer
+2024-01-10 10:04:45.113 UTC [887] LOG:  unexpected EOF on client connection with an open transaction, client: 172.16.1.12
+2024-01-10 10:04:46.234 UTC [889] LOG:  could not receive data from client: Connection reset by peer
+2024-01-10 10:04:46.235 UTC [889] LOG:  unexpected EOF on client connection with an open transaction, client: 172.16.1.14
+2024-01-10 10:04:48.501 UTC [890] LOG:  could not receive data from client: Connection reset by peer
+2024-01-10 10:04:48.502 UTC [890] LOG:  unexpected EOF on client connection with an open transaction, client: 172.16.1.15
+2024-01-10 10:04:52.123 UTC [891] LOG:  could not receive data from client: Connection reset by peer
+2024-01-10 10:04:52.124 UTC [891] LOG:  unexpected EOF on client connection with an open transaction, client: 172.16.1.13
+2024-01-10 10:04:55.321 UTC [892] LOG:  could not receive data from client: Connection reset by peer
+2024-01-10 10:04:55.322 UTC [892] LOG:  unexpected EOF on client connection with an open transaction, client: 172.16.1.16
+2024-01-10 10:05:00.000 UTC [880] LOG:  checkpoint starting: time
+2024-01-10 10:05:08.123 UTC [880] LOG:  checkpoint complete: wrote 1200 buffers (7.3%)
+2024-01-10 10:05:15.999 UTC [1811] LOG:  disconnection: session time: 0:01:00.426 user=rag_user host=172.16.6.60
+2024-01-10 10:06:00.000 UTC [880] LOG:  autovacuum: processing database "chatbot_prod"
+2024-01-10 10:06:20.123 UTC [1820] LOG:  connection received: host=chatbot-app-2 [172.16.5.51] port=38767, user=chatbot_user
+2024-01-10 10:06:20.129 UTC [1820] LOG:  connection authorized: user=chatbot_user database=chatbot_prod
+2024-01-10 10:07:00.000 UTC [1821] LOG:  connection received: host=rag-worker-2 [172.16.6.61] port=41240, user=rag_user
+2024-01-10 10:07:00.006 UTC [1821] LOG:  connection authorized: user=rag_user database=rag_prod
+2024-01-10 10:08:30.500 UTC [1820] LOG:  disconnection: session time: 0:02:10.371 user=chatbot_user host=172.16.5.51
+2024-01-10 10:09:10.800 UTC [1821] LOG:  disconnection: session time: 0:02:10.794 user=rag_user host=172.16.6.61
