@@ -30,87 +30,45 @@ def load_documents(base_dir: Path, glob_pattern: str) -> list:
     return docs
 
 
-def split_documents(documents: list) -> list:
-    if not documents:
-        return []
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        length_function=len,
-    )
-    return splitter.split_documents(documents)
-
-
-def save_chunks(chunks: list, parsed_by_filename: dict) -> None:
-    if not chunks:
-        print("No chunks to save")
-        return
-    db = SessionLocal()
-    try:
-        # clear previous data before inserting
-        deleted = db.query(Knowledge).delete()
-        if deleted:
-            print(f"Cleared {deleted} existing rows from knowledge")
-        added = []
-        annotated = set()
-        for chunk in chunks:
-            source = chunk.metadata.get("source", "unknown")
-            filename = os.path.basename(source)
-            vector = get_embedding(chunk.page_content)
-            parsed = parsed_by_filename.get(filename)
-            is_first = filename not in annotated and parsed is not None
-            if is_first:
-                annotated.add(filename)
-            added.append(
-                Knowledge(
-                    filename=filename,
-                    content=chunk.page_content,
-                    vector=vector,
-                    case_id=parsed["case_id"] if is_first else None,
-                    title=parsed["title"] if is_first else None,
-                    category=parsed["category"] if is_first else None,
-                    severity=parsed["severity"] if is_first else None,
-                    summary=parsed["summary"] if is_first else None,
-                    root_cause=parsed["root_cause"] if is_first else None,
-                    timeline=parsed["timeline"] if is_first else None,
-                    immediate_fix=parsed["immediate_fix"] if is_first else None,
-                    long_term_fix=parsed["long_term_fix"] if is_first else None,
-                    tags=parsed["tags"] if is_first else None,
-                    references=parsed["references"] if is_first else None,
-                )
-            )
-        db.add_all(added)
-        db.commit()
-        print(f"Saved {len(added)} chunks to database")
-    except Exception as exc:
-        print(f"Error saving to database: {exc}")
-        db.rollback()
-    finally:
-        db.close()
-
-
-def parse_cases(documents: list) -> dict:
-    parsed_by_filename = {}
-    for doc in documents:
-        filename = os.path.basename(doc.metadata.get("source", ""))
-        if not filename:
-            continue
-        parsed_by_filename[filename] = parse_case_text(doc.page_content)
-    return parsed_by_filename
-
-
 def ingest_dirs(dirs: list, glob_pattern: str) -> None:
     all_docs = []
     for d in dirs:
         docs = load_documents(Path(d).resolve(), glob_pattern=glob_pattern)
         all_docs.extend(docs)
+    
     if not all_docs:
         print("No documents loaded. Check directories or glob pattern.")
         return
-    parsed_by_filename = parse_cases(all_docs)
-    chunks = split_documents(all_docs)
-    print(f"Total chunks: {len(chunks)}")
-    save_chunks(chunks, parsed_by_filename)
+
+    print(f"Found {len(all_docs)} documents. Parsing and saving...")
+    
+    from app.services.cases_service import save_case_report_structured
+
+    success_count = 0
+    fail_count = 0
+    
+    for doc in all_docs:
+        try:
+            filename = os.path.basename(doc.metadata.get("source", ""))
+            print(f"Processing {filename}...")
+            
+            # Parse the text into structured dictionary
+            parsed_data = parse_case_text(doc.page_content)
+            
+            # Ensure filename matches if not present in text (fallback)
+            if not parsed_data.get("filename"):
+                parsed_data["filename"] = filename
+
+            # Save via service (handles validation, vector embedding, etc.)
+            saved_id = save_case_report_structured(parsed_data)
+            print(f"  -> Saved as {saved_id}")
+            success_count += 1
+            
+        except Exception as e:
+            print(f"  -> Failed to process {filename}: {e}")
+            fail_count += 1
+
+    print(f"\nIngestion Complete. Success: {success_count}, Failed: {fail_count}")
 
 
 def default_dirs() -> list:

@@ -4,11 +4,11 @@
 <template>
   <header class="app-header">
     <div class="app-title">
-      Incident / Case Knowledge Base
+      IT 事件助理系統
     </div>
     <nav class="app-nav">
-      <RouterLink to="/dashboard">Dashboard</RouterLink>
-      <RouterLink to="/cases">Cases</RouterLink>
+      <RouterLink to="/analysis">分析</RouterLink>
+      <RouterLink to="/knowledge-graph">圖譜</RouterLink>
     </nav>
   </header>
 </template>

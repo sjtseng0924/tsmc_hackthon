@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Any
 
 # 基礎欄位 (Shared properties)
 class KnowledgeChunkBase(BaseModel):
@@ -26,18 +26,38 @@ class CaseReference(BaseModel):
     url: str
 
 
-class CaseItem(BaseModel):
-    id: str
+class PreventionMeasure(BaseModel):
     title: str
-    category: str
+    content: str
+    owner: str
+    link: Optional[str] = None
+
+
+class CaseItem(BaseModel):
+    filename: str  # Was id
+    title: str
     severity: str
+    
+    # New structured fields
+    reportDate: Optional[str] = None
+    occurredAt: Optional[str] = None
+    resolvedAt: Optional[str] = None
+    
+    reportProblem: Optional[str] = None
+    impactService: Optional[str] = None
+    impactUser: Optional[str] = None
+    impactData: Optional[str] = None
+    
     rootCause: str
-    tags: List[str]
-    summary: str
+    eventDetails: Optional[str] = None
     timeline: List[str]
-    immediateFix: str
-    longTermFix: str
-    references: List[CaseReference]
+    inferenceProcess: Optional[str] = None
+    
+    solution: Optional[str] = None
+    preventiveMeasures: List[PreventionMeasure] = [] 
+    hiddenRisks: Optional[Any] = None # JSON structure
+
+    summary: Optional[str] = None # For backward compatibility in frontend display
 
 
 class CaseListResponse(BaseModel):

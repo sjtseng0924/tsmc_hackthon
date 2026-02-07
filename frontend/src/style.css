@@ -6,7 +6,7 @@ body {
   margin: 0;
   font-family: "Inter", "Noto Sans TC", system-ui, -apple-system, sans-serif;
   color: #1f2937;
-  background: #f8fafc;
+  background: #F1F4F9; /* Global Background */
 }
 
 a {

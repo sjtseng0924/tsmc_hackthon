@@ -9,8 +9,12 @@ while ! python -c "import socket; s=socket.socket(); s.settimeout(1); s.connect(
 done
 echo "Database is ready!"
 
+# Apply migrations (Do NOT generate them here,generation is manual)
 alembic upgrade head
+python script/seed_initial_data.py
 python app/script/ingest_knowledge.py
 python app/script/ingest_logs.py
 python app/script/ingest_code_file.py
+
+# Start Backend
 uvicorn app.main:app --host 0.0.0.0 --port 8000

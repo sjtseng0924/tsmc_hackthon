@@ -11,6 +11,95 @@ from app.database import SessionLocal
 from app.models import Code, Knowledge, LogEntry, LogFile
 from app.config import settings
 from app.services.message_service import list_recent_messages, search_messages
+from app.services.cases_service import save_case_report_structured
+from app.tools.scheduler import (
+    schedule_invite_when_available,
+    list_scheduled_tasks,
+    cancel_scheduled_task,
+)
+
+def submit_incident_report(
+    title: str,
+    severity: str,
+    root_cause: str,
+    timeline: list[str],
+    solution: str,
+    
+    # New Structured Fields
+    filename: str = None, # User-facing ID (e.g. INC-2026...)
+    report_date: str = None,
+    occurred_at: str = None,
+    resolved_at: str = None,
+    report_problem: str = None,
+    impact_service: str = None,
+    impact_user: str = None,
+    impact_data: str = None,
+    event_details: str = None,
+    inference_process: str = None,
+    preventive_measures: list[dict] = [],
+    hidden_risks: list[dict] = [], # JSON structure or List
+) -> str:
+    """
+    Submit a finalized Incident Post-Mortem report to the database.
+    
+    Args:
+        title: The title of the incident
+        severity: One of 'critical', 'high', 'medium', 'low'
+        root_cause: The fundamental cause
+        timeline: List of timestamped events (strings)
+        solution: Full solution description (Immediate + Long term)
+        
+        report_date: ISO 8601 date string (e.g. "2026-02-06T12:00:00")
+        occurred_at: When the issue started (ISO 8601)
+        resolved_at: When the issue was resolved (ISO 8601)
+        report_problem: Description of the initial report
+        impact_service: Service impact description
+        impact_user: User impact description
+        impact_data: Data impact description
+        event_details: Detailed event log analysis
+        inference_process: Reasoning steps
+        preventive_measures: List of {title, content, owner, link}
+        hidden_risks: List of {title, content, link} or structured risk objects
+    """
+    _emit_progress(f"正在將結案報告存入資料庫: {title}")
+
+    normalized_severity = (severity or "").strip()
+    if normalized_severity.upper() == "P0":
+        normalized_severity = "critical"
+    elif normalized_severity.upper() == "P1":
+        normalized_severity = "high"
+    elif normalized_severity.upper() == "P2":
+        normalized_severity = "medium"
+    elif normalized_severity.upper() == "P3":
+        normalized_severity = "low"
+    
+    data = {
+        "title": title,
+        "severity": normalized_severity,
+        "root_cause": root_cause,
+        "timeline": timeline,
+        "solution": solution,
+        "solution": solution,
+        
+        "filename": filename,
+        "report_date": report_date,
+        "occurred_at": occurred_at,
+        "resolved_at": resolved_at,
+        "report_problem": report_problem,
+        "impact_service": impact_service,
+        "impact_user": impact_user,
+        "impact_data": impact_data,
+        "event_details": event_details,
+        "inference_process": inference_process,
+        "preventive_measures": preventive_measures,
+        "hidden_risks": hidden_risks,
+    }
+    
+    try:
+        case_id = save_case_report_structured(data)
+        return f"報告已成功存檔。檔案名稱: {case_id}"
+    except Exception as e:
+        return f"存檔失敗: {str(e)}"
 
 
 _progress_sender: Optional[Callable[[str], None]] = None
@@ -115,70 +204,6 @@ def search_discord_messages(query: str, limit: int = 20) -> str:
     lines.extend(_format_message_line(item) for item in items)
     return "\n".join(lines)
 
-
-def search_industry_standards(query: str, limit: int = 5) -> str:
-    """
-    使用 Google Custom Search 查詢業界標準/最佳實務。
-    
-    Auth: Uses Service Account JSON ("townpass-microservice-d04ce025965e.json")
-    Config: Uses GOOGLE_SEARCH_CX from settings.
-    """
-    if not query or not query.strip():
-        return "請提供要搜尋的關鍵字 (例如: CI/CD best practices, security linters)。"
-
-    _emit_progress(f"目前在看: Google Search 業界標準\n查詢: {query}")
-
-    # 1. 取得 Service Account Credentials
-    try:
-        from google.oauth2 import service_account
-        from googleapiclient.discovery import build
-        
-        # Hardcoded relative path as requested
-        sa_filename = "google-search-SA.json"
-        sa_path = Path(settings.BACKEND_ROOT) / sa_filename
-        
-        # print(f"[DEBUG] Attempting to load Search Service Account from: {sa_path}")
-        # _emit_progress(f"有成功使用 Search Sevice Account: {sa_path}")
-        if not sa_path.exists():
-            return f"找不到 Service Account 金鑰檔案: {sa_filename} (請確認它在 backend 根目錄)"
-
-        creds = service_account.Credentials.from_service_account_file(
-            str(sa_path), 
-            scopes=["https://www.googleapis.com/auth/cse"]
-        )
-        print(f"[DEBUG] Successfully loaded Service Account credentials for: {creds.service_account_email}")
-    except Exception as e:
-        print(f"[ERROR] Failed to load Service Account credentials: {e}")
-    
-    # 2. 取得 CX
-    cx = settings.GOOGLE_SEARCH_CX
-    if not cx:
-        _emit_progress(f"GOOGLE_SEARCH_CX設定失敗")
-        return "未設定 GOOGLE_SEARCH_CX，請在 .env 中設定。"
-
-    # 3. 執行搜尋
-    limit = max(1, limit)
-    try:
-        service = build("customsearch", "v1", credentials=creds)
-        res = service.cse().list(q=query, cx=cx, num=limit).execute()
-        
-        items = res.get("items", [])
-        if not items:
-            return "Google 搜尋沒有找到相關結果。"
-
-        lines = [f"Google 搜尋結果 (top {limit}, query={query}):"]
-        for item in items:
-            title = item.get("title") or "未命名結果"
-            link = item.get("link") or ""
-            snippet = (item.get("snippet") or "").replace("\n", " ")
-            if len(snippet) > 200:
-                snippet = snippet[:200] + "..."
-            lines.append(f"- {title}: {link} — {snippet}")
-        
-        return "\n".join(lines)
-
-    except Exception as exc:
-        return f"Google 搜尋 API 呼叫失敗: {exc}"
 
 def list_log_files(limit: int = 20) -> str:
     """
@@ -390,3 +415,54 @@ def get_case_report(case_id: str) -> str:
         )
     finally:
         db.close()
+
+
+# ===== Scheduler Tools =====
+# Import scheduler functions
+
+def schedule_discord_invite(
+    user_name: str,
+    channel_id: str,
+    notification_message: Optional[str] = None
+) -> str:
+    """
+    查詢使用者的最快空閒時間，並排程在該時間將使用者拉進 Discord 頻道。
+    
+    這個函數會：
+    1. 查詢使用者接下來 2 天內的最快空閒時段
+    2. 將「拉人進頻道 + 發送通知」的任務記錄到資料庫
+    3. 由 cron job 在指定時間執行任務
+    
+    Args:
+        user_name: 使用者名稱（支援模糊匹配）
+        channel_id: Discord 頻道 ID
+        notification_message: 選用的通知訊息，會在拉人進頻道時同時發送
+        
+    Example:
+        schedule_discord_invite("Kevin", "1234567890", "嗨 Kevin，會議準備開始了！")
+    """
+    _emit_progress(f"正在查詢 {user_name} 的空閒時間並排程邀請...")
+    return schedule_invite_when_available(user_name, channel_id, notification_message)
+
+
+def list_scheduled_invites(status: Optional[str] = None, limit: int = 20) -> str:
+    """
+    列出排程的邀請任務。
+    
+    Args:
+        status: 篩選狀態（'pending', 'completed', 'failed', 'cancelled'），不指定則顯示全部
+        limit: 最多顯示幾筆（預設 20）
+    """
+    _emit_progress("正在查詢排程任務清單...")
+    return list_scheduled_tasks(status=status, limit=limit)
+
+
+def cancel_scheduled_invite(task_id: int) -> str:
+    """
+    取消排程的邀請任務。
+    
+    Args:
+        task_id: 任務 ID
+    """
+    _emit_progress(f"正在取消任務 {task_id}...")
+    return cancel_scheduled_task(task_id=task_id)

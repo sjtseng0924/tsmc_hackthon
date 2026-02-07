@@ -250,6 +250,7 @@ class DiscordService:
             user_message=user_prompt,
             rag_context="",
             conversation_history=self._get_history(channel_id),
+            channel_id=channel_id,
         )
 
         if not isinstance(result, dict):
@@ -286,6 +287,7 @@ class DiscordService:
             user_message=user_prompt,
             rag_context="",
             conversation_history=self._get_history(channel_id),
+            channel_id=channel_id,
         )
 
         if not isinstance(result, dict):

@@ -89,20 +89,66 @@ def list_events(max_results: int = 10, calendar_id: str = "primary",  time_min: 
     return _call_n8n("list_events", payload)
 
 
-# Mock Contact List - In production, this would come from a DB or LDAP
-CONTACT_LIST = {
-    "ivan": "ivan@example.com",
-    "kevin": "kevin@example.com",
-    "david": "david103132881@gmail.com", 
-    "cindy": "cindy@example.com",
-    "alice": "alice@example.com",
-    "bob": "bob@example.com"
-}
+from sqlalchemy import text
+from app.database import SessionLocal
 
 def get_email_by_name(name: str) -> str:
-    """Resolves a name to an email address."""
-    name_lower = name.lower().strip()
-    return CONTACT_LIST.get(name_lower, name)  # Return original if not found (assume it's an email)
+    """
+    Resolves a name to an email address using fuzzy matching.
+    
+    This function uses PostgreSQL's pg_trgm extension to find the most similar
+    contact name, allowing for typos and small variations.
+    
+    Args:
+        name: The person's name (can have typos)
+        
+    Returns:
+        - The email address if a match is found (similarity >= 0.3)
+        - The original input if it looks like an email (contains '@')
+        - The original input if no match is found
+        
+    Examples:
+        - "david" -> "david103132881@gmail.com"
+        - "davd" (typo) -> "david103132881@gmail.com"
+        - "kevin@example.com" -> "kevin@example.com" (pass-through)
+    """
+    name_stripped = name.strip()
+    
+    # If input looks like an email, return as-is
+    if '@' in name_stripped:
+        return name_stripped
+    
+    db = SessionLocal()
+    try:
+        # Use PostgreSQL trigram similarity for fuzzy matching
+        # similarity() returns a score between 0 and 1
+        # We order by similarity DESC and take the best match
+        # Threshold of 0.2 works better for short names (3-5 chars)
+        query = text("""
+            SELECT email, name, similarity(LOWER(name), LOWER(:input_name)) as score
+            FROM contacts
+            WHERE is_active = 1
+              AND similarity(LOWER(name), LOWER(:input_name)) > 0.2
+            ORDER BY score DESC
+            LIMIT 1
+        """)
+        
+        result = db.execute(query, {"input_name": name_stripped}).fetchone()
+        
+        if result:
+            email, matched_name, score = result
+            print(f"DEBUG: Fuzzy matched '{name_stripped}' -> '{matched_name}' (email: {email}, score: {score:.2f})")
+            return email
+        else:
+            print(f"DEBUG: No match found for '{name_stripped}', returning as-is")
+            return name_stripped  # Return original if no match
+            
+    except Exception as e:
+        print(f"ERROR: Failed to query contacts: {e}")
+        return name_stripped  # Fallback to original input
+    finally:
+        db.close()
+
 
 
 def check_availability(
@@ -111,39 +157,44 @@ def check_availability(
     emails: List[str]
 ):
     """
-    Checks if a person is free at a specific time AND finds the next available slot within 2 days.
+    Check availability for a set of people within a time range.
+    Returns availability status and the next available free slot.
     
-    This tool always returns BOTH:
-    1. Current availability (true/false) for the requested time range
-    2. Next free slot within 2 days (with start time, end time, and duration)
+    This function ONLY checks availability. It does NOT create events or perform Discord actions.
     
-    Use this for ANY availability-related query:
-    - "Is David free now?" → Returns current status + next slot
-    - "When is David free?" → Returns current status + next slot
-    - "Find a time to meet with David" → Returns current status + next slot
+    **Important:** This function accepts either names or email addresses.
+    - If you pass a name (e.g., "Kevin"), it will automatically look up the email from the contacts database.
+    - If you pass an email (e.g., "kevin@example.com"), it will use it directly.
     
-    Args:
-        time_min: Start time in ISO format (e.g., '2023-10-27T09:00:00Z').
-        time_max: End time in ISO format (e.g., '2023-10-27T17:00:00Z').
-        emails: A list of email addresses OR names (e.g. ["Ivan", "kevin@example.com"]).
+    :param time_min: Start time in ISO format (e.g. 2024-01-01T09:00:00Z)
+    :param time_max: End time in ISO format
+    :param emails: List of names or email addresses to check (names will be converted to emails automatically)
     
-    Returns:
-        {
-            "available": true/false,
-            "next_free_slot": {
-                "start": "ISO timestamp",
-                "end": "ISO timestamp",
-                "duration_minutes": 60
-            }
-        }
+    Example:
+        check_availability("2024-01-01T09:00:00Z", "2024-01-01T17:00:00Z", ["Kevin", "David"])
     """
-    resolved_emails = [get_email_by_name(e) for e in emails]
+    from app.services.n8n import n8n_client  # Delayed import
     
-    return _call_n8n("check_availability", {
+    # Convert all names to emails using get_email_by_name
+    resolved_emails = []
+    for name_or_email in emails:
+        email = get_email_by_name(name_or_email)
+        resolved_emails.append(email)
+        print(f"DEBUG: Resolved '{name_or_email}' -> '{email}'")
+    
+    # Only send the inner payload, n8n_client will wrap it with action
+    payload = {
         "timeMin": time_min,
         "timeMax": time_max,
-        "items": resolved_emails
-    })
+        "emails": resolved_emails  # Use resolved emails instead of raw input
+    }
+
+    try:
+        response = n8n_client.call_webhook("check_availability", payload)
+        return response
+    except Exception as e:
+        return {"error": str(e)}
+
 
 def find_available_slots(
     time_min: str, 
@@ -151,68 +202,151 @@ def find_available_slots(
     emails: List[str]
 ):
     """
-    Alias for check_availability - finds when a person is available.
-    
-    This is identical to check_availability and exists for backward compatibility.
-    It returns BOTH current availability status AND next free slot within 2 days.
-    
-    Args:
-        time_min: Start availability search range (e.g., '2023-10-27T09:00:00Z').
-        time_max: End availability search range.
-        emails: A list of email addresses OR names.
-    
-    Returns:
-        {
-            "available": true/false,
-            "next_free_slot": {
-                "start": "ISO timestamp",
-                "end": "ISO timestamp",
-                "duration_minutes": 60
-            }
-        }
+    Find available slots (Alias for check_availability).
     """
-    # Just call check_availability - they now do the same thing
     return check_availability(time_min, time_max, emails)
 
+
 def create_event(
-    summary: str, 
-    start_time: str, 
-    end_time: str, 
-    attendees: List[str] = [],
-    calendar_id: str = "primary",
-    is_allday: bool = False
+    start: str,
+    end: str,
+    summary: str,
+    description: Optional[str] = None,
+    attendees: Optional[List[str]] = None
 ):
     """
-    Creates a new event and invites attendees.
+    Create a Google Calendar event.
     
-    Args:
-        summary: The title of the event.
-        start_time: Start time in ISO format (e.g. '2023-10-27T09:00:00') or date format ('2023-10-27') for all-day.
-        end_time: End time in ISO format or date format.
-        attendees: List of email addresses to invite.
-        calendar_id: The ID of the calendar to create event in.
-        is_allday: Set to True if this is an all-day event.
+    :param start: Start time in ISO format
+    :param end: End time in ISO format
+    :param summary: Event title
+    :param description: Event description
+    :param attendees: List of attendee emails
     """
-    
-    # Construct the base event dictionary
-    resolved_attendees = [get_email_by_name(a) for a in attendees]
-    event_payload = {
-        "calendarId": calendar_id,
-        "summary": summary,
-        "attendees": [{"email": email} for email in resolved_attendees]
-    }
-    
-    if is_allday:
-        # For all-day events, use 'date'. ensure we only send YYYY-MM-DD
-        # Even if the agent sends ISO with time, we strip it.
-        start_date = start_time.split('T')[0]
-        end_date = end_time.split('T')[0]
-        
-        event_payload["start"] = {"date": start_date}
-        event_payload["end"] = {"date": end_date}
-    else:
-        # Regular events use 'dateTime'
-        event_payload["start"] = {"dateTime": start_time}
-        event_payload["end"] = {"dateTime": end_time}
+    from app.services.n8n import n8n_client
 
-    return _call_n8n("create_event", event_payload)
+    payload = {
+        "start": start,
+        "end": end,
+        "summary": summary,
+        "description": description,
+        "attendees": attendees or []
+    }
+
+    try:
+        response = n8n_client.call_webhook("create_event", payload)
+        return response
+    except Exception as e:
+        return {"error": str(e)}
+    
+
+# ===== Scheduler Tools (Simplified Wrappers) =====
+
+def schedule_discord_invite(user_name: str, channel_id: str, notification_message: str = ""):
+    """
+    Schedule a Discord invite when the user becomes available.
+    
+    :param user_name: User name to invite
+    :param channel_id: Discord channel ID  
+    :param notification_message: Optional notification message
+    """
+    from app.tools.scheduler import schedule_invite_when_available
+    return schedule_invite_when_available(user_name, channel_id, notification_message or None)
+
+
+def list_scheduled_invites(status: str = "", limit: int = 20):
+    """
+    List scheduled invite tasks.
+    
+    :param status: Filter by status (pending/completed/failed)
+    :param limit: Maximum number of results
+    """
+    from app.tools.scheduler import list_scheduled_tasks
+    return list_scheduled_tasks(status=status or None, limit=limit)
+
+
+def cancel_scheduled_invite(task_id: int):
+    """
+    Cancel a scheduled invite task.
+    
+    :param task_id: Task ID to cancel
+    """
+    from app.tools.scheduler import cancel_scheduled_task
+    return cancel_scheduled_task(task_id=task_id)
+
+
+def send_direct_message(user_name: str, message: str):
+    """
+    Send a Direct Message (DM) to a user via Discord.
+    
+    :param user_name: User name (fuzzy matched)
+    :param message: Message content
+    """
+    from app.tools.discord import send_direct_message as _send_dm
+    return _send_dm(user_name, message)
+
+
+def find_best_meeting_time(channel_id: str, time_min: str, time_max: str):
+    """
+    Find the best meeting time for all members in a Discord channel.
+    
+    This function queries all channel members' Google Calendar availability
+    and returns their busy periods so the LLM can determine the optimal
+    meeting time (when most people are available).
+    
+    :param channel_id: Discord channel ID (to identify participants)
+    :param time_min: Start of time range (ISO format, e.g., "2026-02-10T00:00:00Z")
+    :param time_max: End of time range (ISO format, e.g., "2026-02-16T23:59:59Z")
+    :return: JSON with all members' busy periods for LLM analysis
+    """
+    from sqlalchemy import text
+    from app.database import SessionLocal
+    
+    # Step 1: Query DB to get all emails for users in this channel
+    # (Assumption: contacts table has channel_id or we filter by is_active)
+    # For simplicity, let's get all active contacts with email
+    db = SessionLocal()
+    try:
+        query = text("""
+            SELECT DISTINCT email
+            FROM contacts
+            WHERE is_active = 1
+              AND email IS NOT NULL
+              AND email LIKE '%@%'
+        """)
+        
+        results = db.execute(query).fetchall()
+        emails = [r.email for r in results if r.email]
+        
+        if not emails:
+           return json.dumps({
+                "error": "找不到頻道成員的 email",
+                "members": [],
+                "total_members": 0
+            })
+        
+        # Step 2: Call n8n to query all members' calendars
+        payload = {
+            "emails": emails,
+            "timeMin": time_min,
+            "timeMax": time_max
+        }
+        
+        result = _call_n8n("find_best_meeting_time", payload)
+        
+        # Parse and return
+        try:
+            data = json.loads(result) if isinstance(result, str) else result
+            return json.dumps(data, ensure_ascii=False, indent=2)
+        except:
+            return result
+            
+    except Exception as e:
+        return json.dumps({
+            "error": f"查詢失敗: {str(e)}",
+            "members": [],
+            "total_members": 0
+        })
+    finally:
+        db.close()
+

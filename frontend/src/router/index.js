@@ -1,22 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import CaseListView from '../views/CaseListView.vue'
 import CaseDetailView from '../views/CaseDetailView.vue'
-import DashboardView from '../views/DashboardView.vue'
 
 const routes = [
   {
     path: '/',
-    redirect: '/dashboard',
+    redirect: '/analysis',
   },
   {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: DashboardView,
+    path: '/analysis',
+    name: 'analysis',
+    component: () => import('../views/AnalysisView.vue'),
   },
   {
-    path: '/cases',
-    name: 'cases',
-    component: CaseListView,
+    path: '/knowledge-graph',
+    name: 'knowledge-graph',
+    component: () => import('../views/KnowledgeGraphView.vue'),
   },
   {
     path: '/cases/:id',
@@ -24,6 +22,14 @@ const routes = [
     component: CaseDetailView,
     props: true,
   },
+  {
+    path: '/dashboard',
+    redirect: '/analysis'
+  },
+  {
+    path: '/cases',
+    redirect: '/analysis'
+  }
 ]
 
 const router = createRouter({

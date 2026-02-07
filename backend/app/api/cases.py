@@ -53,12 +53,12 @@ def get_case_ids(
     return {"total": len(items), "ids": list_case_ids(items)}
 
 
-@router.get("/cases/{case_id}", response_model=CaseItem)
-def get_case(case_id: str) -> CaseItem:
-    item = get_case_item(case_id)
+@router.get("/cases/{filename}", response_model=CaseItem)
+def get_case(filename: str) -> CaseItem:
+    item = get_case_item(filename)
     if not item:
         raise HTTPException(
             status_code=404,
-            detail={"message": "Case not found", "caseId": case_id},
+            detail={"message": "Case not found", "filename": filename},
         )
     return item
