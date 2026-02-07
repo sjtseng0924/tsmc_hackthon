@@ -2,12 +2,15 @@
 import os
 import json
 import logging
+import re
 from typing import Optional
 
 import vertexai
 from vertexai import agent_engines
 
 from app.config import settings
+from app.database import SessionLocal
+from app.models import Knowledge
 from app.services.assistant_tools import (
     get_case_report,
     get_code_file,
@@ -21,7 +24,7 @@ from app.services.assistant_tools import (
     submit_incident_report,
     # Don't import scheduler tools from here - use direct import below
 )
-from app.services.rag import retrieve_knowledge
+from app.services.rag import get_embedding, retrieve_knowledge
 from app.tools.calendar import (
     list_events, 
     create_event, 
@@ -157,6 +160,8 @@ def init_models():
 
 def _detect_intent(user_message: str) -> str:
     text = (user_message or "").lower()
+    if _looks_like_case_lookup_request(user_message):
+        return "case_lookup"
     if any(keyword in text for keyword in ["結案報告", "事故結案", "post-mortem", "post mortem", "結案"]):
         return "summary_all"
     # Discord + Calendar 相關都用 calendar mode (因為 Discord tools 也在 calendar_agent 中)
@@ -181,7 +186,7 @@ def _semantic_intent_fallback(user_message: str) -> Optional[str]:
     if _intent_agent is None:
         init_agent_vertex()
 
-    allowed_modes = {"summary_all", "summary_problem", "calendar", "future_improve", "solution"}
+    allowed_modes = {"summary_all", "summary_problem", "calendar", "future_improve", "solution", "case_lookup"}
     intent_prompt = (
         "你是意圖分類器。請根據使用者輸入，從以下模式中選一個最適合的：\n"
         "- summary_all: 要求結案報告 / post-mortem\n"
@@ -189,6 +194,7 @@ def _semantic_intent_fallback(user_message: str) -> Optional[str]:
         "- calendar: 查詢或安排日曆、會議、加人進 Discord 頻道、私訊或排程邀請\n"
         "- future_improve: 要求如何改善、預防、未來改進\n"
         "- solution: 問題排查、修復、處理、解法\n\n"
+        "- case_lookup: 查詢跟某主題相關的歷史結案報告，並回傳連結\n\n"
         "規則：\n"
         "1. 只能輸出單一模式字串，不要任何額外文字。\n"
         "2. 若完全沒有對應，請輸出 unknown。\n"
@@ -223,6 +229,131 @@ def _semantic_intent_fallback(user_message: str) -> Optional[str]:
         return None
     mode_text = mode_text.split()[0]
     return mode_text if mode_text in allowed_modes else "unknown"
+
+
+def _extract_case_lookup_topic(user_message: str) -> str:
+    text = (user_message or "").strip()
+    if not text:
+        return ""
+
+    patterns = [
+        r"跟[（(](.+?)[)）]\s*相關的?結案報告",
+        r"跟(.+?)相關的?結案報告",
+        r"看[（(](.+?)[)）]\s*相關的?結案報告",
+        r"看(.+?)相關的?結案報告",
+    ]
+    for pattern in patterns:
+        matched = re.search(pattern, text, flags=re.IGNORECASE)
+        if matched:
+            return (matched.group(1) or "").strip()
+    return ""
+
+
+def _looks_like_case_lookup_request(user_message: str) -> bool:
+    text = (user_message or "").strip().lower()
+    if "結案報告" not in text:
+        return False
+    if "相關" not in text:
+        return False
+    if any(token in text for token in ["我要看", "我想看", "幫我找", "幫我看", "找一下", "查一下"]):
+        return True
+    return bool(_extract_case_lookup_topic(user_message))
+
+
+def _build_case_url(filename: str) -> str:
+    frontend_host = (settings.FRONTEND_HOST or "localhost:5173").strip()
+    if frontend_host.startswith("http://") or frontend_host.startswith("https://"):
+        base = frontend_host.rstrip("/")
+    else:
+        base = f"http://{frontend_host.strip('/')}"
+    return f"{base}/cases/{filename}"
+
+
+def _search_related_case_reports(topic: str, limit: int = 3) -> list[Knowledge]:
+    query = (topic or "").strip()
+    if not query:
+        return []
+
+    db = SessionLocal()
+    try:
+        # 1) 先用關鍵字精準比對，避免語意誤判。
+        pattern = f"%{query.lower()}%"
+        lexical_rows = (
+            db.query(Knowledge)
+            .filter(Knowledge.root_cause.isnot(None))
+            .filter(
+                Knowledge.title.ilike(pattern)
+                | Knowledge.report_problem.ilike(pattern)
+                | Knowledge.root_cause.ilike(pattern)
+                | Knowledge.event_details.ilike(pattern)
+                | Knowledge.solution.ilike(pattern)
+                | Knowledge.content.ilike(pattern)
+            )
+            .order_by(Knowledge.filename.desc())
+            .limit(limit)
+            .all()
+        )
+        if lexical_rows:
+            return lexical_rows
+
+        # 2) 關鍵字沒有命中時，改用向量相似度補強，且加上門檻避免亂回覆。
+        query_vector = get_embedding(query)
+        distance_expr = Knowledge.vector.cosine_distance(query_vector)
+        semantic_rows = (
+            db.query(Knowledge, distance_expr.label("distance"))
+            .filter(Knowledge.root_cause.isnot(None), Knowledge.vector.isnot(None))
+            .order_by(distance_expr.asc())
+            .limit(max(6, limit * 2))
+            .all()
+        )
+        filtered: list[Knowledge] = []
+        for row, distance in semantic_rows:
+            if distance is None:
+                continue
+            if float(distance) <= 0.35:
+                filtered.append(row)
+            if len(filtered) >= limit:
+                break
+        return filtered
+    except Exception as e:
+        logger.warning("case lookup search failed: %s", e)
+        return []
+    finally:
+        db.close()
+
+
+def _reply_case_lookup(user_message: str) -> dict:
+    topic = _extract_case_lookup_topic(user_message)
+    if not topic:
+        topic = (
+            (user_message or "")
+            .replace("結案報告", "")
+            .replace("相關", "")
+            .replace("我要看", "")
+            .replace("我想看", "")
+            .replace("幫我找", "")
+            .replace("幫我看", "")
+            .strip(" :：，。！？")
+        )
+
+    cases = _search_related_case_reports(topic, limit=3)
+    if not cases:
+        return {
+            "message": f"找不到和「{topic or '你提供的條件'}」相關的結案報告。",
+            "structured": None,
+            "mode": "case_lookup",
+        }
+
+    lines = [f"找到和「{topic}」相關的結案報告："]
+    for row in cases:
+        title = row.title or "未命名事件"
+        lines.append(f"- {row.filename}｜{title}")
+        lines.append(f"  連結: {_build_case_url(row.filename)}")
+    return {
+        "message": "\n".join(lines),
+        "structured": None,
+        "mode": "case_lookup",
+    }
 
 
 def _history_to_text(history: Optional[list[dict]]) -> str:
@@ -519,6 +650,9 @@ def run_agent(
 
     resolved_mode = mode or _detect_intent(user_message)
     logger.info(f"run_agent intent resolved_mode={resolved_mode}")
+
+    if resolved_mode == "case_lookup":
+        return _reply_case_lookup(user_message)
     
     if resolved_mode == "unknown":
         return {
@@ -529,6 +663,7 @@ def run_agent(
                 "- 報案問題: 「統整報案問題與影響範圍」\n"
                 "- 未來改進: 「如何改進 / 預防措施」\n"
                 "- 解決方案: 「如何解決 / 排除 / 修復」"
+                "- 查相關結案報告: 「找一下跟 X 相關的結案報告」"
             ),
             "structured": None,
             "mode": resolved_mode,
